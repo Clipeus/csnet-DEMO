@@ -10,6 +10,11 @@ P=$(dirname $0);
 cd $P
 
 echo build client
+
+if [ ! -d ./client/build/ ]; then
+    mkdir ./client/build
+fi
+
 cd ./client/build
 cmake ..
 make

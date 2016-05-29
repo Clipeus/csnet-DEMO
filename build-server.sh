@@ -10,6 +10,11 @@ P=$(dirname $0);
 cd $P
 
 echo build server
+
+if [ ! -d ./server/build/ ]; then
+    mkdir ./server/build
+fi
+
 cd ./server/build
 cmake ..
 make
