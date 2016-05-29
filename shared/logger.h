@@ -18,7 +18,7 @@ protected:
     
 public:
     // open logfile by name
-    bool open(const std::string&);
+    bool open(const std::string& filename);
     // close logfile
     void close();
     

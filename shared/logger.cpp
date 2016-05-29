@@ -24,9 +24,9 @@ logger_t::~logger_t()
 }
 
 // open logfile by name
-bool logger_t::open(const std::string& fn)
+bool logger_t::open(const std::string& filename)
 {
-    _file.open(fn, std::fstream::out | std::fstream::trunc);
+    _file.open(filename, std::fstream::out | std::fstream::trunc);
     return _file;
 }
 
