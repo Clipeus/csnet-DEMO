@@ -4,6 +4,10 @@
 #include <chrono>
 #include <ctime>
 #include <sstream>
+#include <unistd.h>
+#include <limits.h>
+#include <cstdlib>
+#include <libgen.h>
 
 #include "logger.h"
 
@@ -26,8 +30,41 @@ logger_t::~logger_t()
 // open logfile by name
 bool logger_t::open(const std::string& filename)
 {
-    _file.open(filename, std::fstream::out | std::fstream::trunc);
+    std::string fn = findfile(filename);
+    _file.open(fn, std::fstream::out | std::fstream::trunc);
     return _file;
+}
+
+// find log file
+std::string logger_t::findfile(const std::string& filename) const
+{
+    std::string log = filename;
+    
+    if (log.empty()) // if file is not specified use exe-name + .log
+    {
+        char dest[PATH_MAX];
+        if (readlink("/proc/self/exe", dest, PATH_MAX) != -1) // get process full path
+        {
+            // process name + '.log' OR log name w/o path
+            log = (basename(dest) + std::string(".log"));
+        }
+    }
+    else if (dirname(&log.front()) == nullptr || *dirname(&log.front()) == '.') // if dir is not specified use exe dir
+    {
+        char dest[PATH_MAX];
+        if (readlink("/proc/self/exe", dest, PATH_MAX) != -1) // get process full path
+        {
+            // process name + '.log' OR log name w/o path
+            std::string fn = basename(&log.front());
+            // process path w/o name
+            std::string dn = dirname(dest);
+            
+            //try to find it in the process path
+            log = dn;
+            log += "/" + fn;
+        }
+    }
+    return log;
 }
 
 // close logfile

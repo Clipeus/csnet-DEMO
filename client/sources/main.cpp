@@ -31,7 +31,7 @@ packet_socket_t get_socket()
 {
     std::stringstream buf;
     packet_socket_t socket;
-    
+
     if (!socket.create())
     {
         buf << "Error occurred: " << socket.error_msg();

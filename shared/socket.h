@@ -16,6 +16,7 @@ namespace shared
 // socket wrapper class
 class socket_t
 {
+    static constexpr int INVALID_SOCKET_HANDLE = -1;
 public:
     // default constuctor
     socket_t();
@@ -174,7 +175,7 @@ public:
     int detach()
     {
         int s = socket();
-        _socket = 0;
+        _socket = INVALID_SOCKET_HANDLE;
         return s;
     }
     // return the socket handle
@@ -231,7 +232,7 @@ protected:
 
 protected:
     // socket handle
-    int _socket = -1;
+    int _socket = INVALID_SOCKET_HANDLE;
     // communication family
     int _family = AF_INET;
     // read timeout

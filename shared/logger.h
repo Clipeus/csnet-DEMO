@@ -26,7 +26,7 @@ public:
     // is logfile opened
     bool opened() const
     {
-        return _file;
+        return _file.is_open();
     }
     // get instance to use logger
     static logger_t* instance()
@@ -45,6 +45,8 @@ public:
     std::ostream& logout();
  
 private:
+    // find log file
+    std::string findfile(const std::string& filename) const;
     // return current system time
     std::string cur_time() const;
     // return current thread id 

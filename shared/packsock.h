@@ -80,7 +80,7 @@ class packet_socket_t : public socket_t
 {
 public:
     packet_socket_t() {}
-    packet_socket_t(const socket_t& socket) : socket_t(socket) {}
+    //packet_socket_t(const socket_t& socket) : socket_t(socket) {}
     explicit packet_socket_t(int socket) : socket_t(socket) {}
 
     // receive text packet from socket

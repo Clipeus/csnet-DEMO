@@ -39,6 +39,7 @@ socket_t& socket_t::operator=(const socket_t& socket)
 {
     if (&socket != this)
         copy(socket);
+
     return *this;
 }
 
@@ -66,7 +67,7 @@ bool socket_t::create(int family, int type, int protocol)
     _family = family;
     
     _socket = ::socket(_family, type, protocol);
-    if (_socket == -1)
+    if (_socket == INVALID_SOCKET_HANDLE)
         set_error(errno);
     
     return error() == 0;
@@ -78,7 +79,7 @@ void socket_t::close()
     if (_socket > 0)
     {
         ::close(_socket);
-        _socket = -1;
+        _socket = INVALID_SOCKET_HANDLE;
     }
 }
 
