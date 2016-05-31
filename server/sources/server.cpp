@@ -119,8 +119,8 @@ int server_t::run()
             else if (ret)
             {
                 logger_t::instance()->logout("Accepting socket.\n");
-                packet_socket_t socket;
-                if (!_listener.accept(socket))
+                packet_socket_t accepted;
+                if (!_listener.accept(accepted))
                 {
                     std::stringstream buf;
                     buf << "Socket accepting failed: " << _listener.error_msg();
@@ -128,7 +128,7 @@ int server_t::run()
                 }
                 
                 logger_t::instance()->logout("Add job to pool.\n");
-                pool.enqueue([this, socket] // handle net request
+                pool.enqueue([this, socket = std::move(accepted)] // handle net request
                 {
                     // thread code
                     logger_t::instance()->logout("Recieving socket data.\n");

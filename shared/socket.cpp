@@ -16,10 +16,10 @@ socket_t::socket_t()
 {
 }
 
-// copy constructor
-socket_t::socket_t(const socket_t& socket)
+// move constructor (copy constructor is not allowed)
+socket_t::socket_t(const socket_t&& socket)
 {
-    copy(socket);
+    move(socket);
 }
 
 // create from socket handle
@@ -34,17 +34,17 @@ socket_t::~socket_t()
     close();
 }
 
-// copy socket from other and than detach it
-socket_t& socket_t::operator=(const socket_t& socket)
+// move socket from other and than detach it
+socket_t& socket_t::operator=(const socket_t&& socket)
 {
     if (&socket != this)
-        copy(socket);
+        move(socket);
 
     return *this;
 }
 
-// copy socket from other and than detach it
-void socket_t::copy(const socket_t& socket)
+// move socket from other and than detach it
+void socket_t::move(const socket_t& socket)
 {
     close();
     

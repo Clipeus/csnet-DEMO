@@ -20,15 +20,15 @@ class socket_t
 public:
     // default constuctor
     socket_t();
-    // copy constructor
-    socket_t(const socket_t& socket);
+    // move constructor (copy constructor is not allowed)
+    socket_t(const socket_t&& socket);
     // create from socket handle
     explicit socket_t(int socket);
     // destructor, clear resource
     virtual ~socket_t();
 
-    // copy socket from other and than detach it
-    socket_t& operator=(const socket_t& socket);
+    // move socket from other and than detach it
+    socket_t& operator=(const socket_t&& socket);
     // create socket object
     bool create(int family = AF_INET, int type = SOCK_STREAM, int protocol = 0);
     // close handle 
@@ -221,8 +221,8 @@ protected:
     bool is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timespec* ts = nullptr, const sigset_t* sigmask = nullptr) const;
     // get ip address by host name
     hostent* gethostbyname(const std::string& name) const;
-    // copy socket from other and than detach it
-    void copy(const socket_t& socket);
+    // move socket from other and than detach it
+    void move(const socket_t& socket);
     // set last error socket
     void set_error(int e) const
     {
