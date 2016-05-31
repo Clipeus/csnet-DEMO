@@ -236,7 +236,7 @@ bool server_t::is_finished()
 // execute command and get its result
 std::string server_t::exec(const std::string& cmd) 
 {
-    std::vector<char> buffer(128 + 1);
+    std::array<char, 128 + 1> buffer;
     std::string result = "";
     
     FILE* pipe = popen(cmd.c_str(), "r");
@@ -247,7 +247,7 @@ std::string server_t::exec(const std::string& cmd)
     {
         while (!feof(pipe)) 
         {
-            if (fgets(&buffer.front(), 128, pipe) != NULL)
+            if (fgets(buffer.data(), 128, pipe) != NULL)
             {
                 buffer[128] = 0;
                 result += buffer.data();

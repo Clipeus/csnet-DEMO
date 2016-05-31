@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cctype>
 #include <vector>
+#include <array>
 
 #include "cfgparser.h"
 
@@ -14,7 +15,7 @@ namespace csnet
 namespace shared
 {
 
-static const int BUFFER_SIZE = 1024; // buffer size to read
+static constexpr int BUFFER_SIZE = 1024; // buffer size to read
     
 // init and open a config file
 cfgparser_t::cfgparser_t(const std::string& filename)
@@ -49,13 +50,13 @@ std::string cfgparser_t::findfile(const std::string& filename) const
     {
         //file not found try to find it
         
-        char dest[PATH_MAX];
-        if (readlink("/proc/self/exe", dest, PATH_MAX) != -1) // get process full path
+        std::array<char, PATH_MAX> dest;
+        if (readlink("/proc/self/exe", dest.data(), PATH_MAX) != -1) // get process full path
         {
             // process name + '.cfg' OR cfg name w/o path
-            std::string fn = cfg.empty() ? (basename(dest) + std::string(".cfg")) : basename(&cfg.front());
+            std::string fn = cfg.empty() ? (basename(dest.data()) + std::string(".cfg")) : basename(&cfg.front());
             // process path w/o name
-            std::string dn = dirname(dest);
+            std::string dn = dirname(dest.data());
             
             //try to find it in the current dir
             cfg = fn;
@@ -89,7 +90,7 @@ std::string cfgparser_t::get_value(const std::string& section, const std::string
         while (!_file.eof())
 		{
             // read chunk to buffer 
-            std::vector<char> buf(BUFFER_SIZE);
+            std::array<char, BUFFER_SIZE> buf;
             _file.getline(buf.data(), BUFFER_SIZE);
             std::string line = buf.data();
             
@@ -129,7 +130,7 @@ bool cfgparser_t::find_section(const std::string& section) const
 	while (!_file.eof())
 	{
         // read chunk to buffer 
-        std::vector<char> buf(BUFFER_SIZE);
+        std::array<char, BUFFER_SIZE> buf;
 		_file.getline(buf.data(), BUFFER_SIZE);
         std::string line = buf.data();
 

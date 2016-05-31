@@ -90,13 +90,13 @@ bool socket_t::attach(int socket)
     
     _socket = socket;
     
-    int8_t addr[1024];
+    std::array<int8_t, 1024> addr;
     socklen_t len = sizeof(addr);
 
-    if (::getsockname(_socket, (sockaddr*)addr, &len) < 0)
+    if (::getsockname(_socket, (sockaddr*)addr.data(), &len) < 0)
         set_error(errno);
     else
-        _family = ((sockaddr_in*)addr)->sin_family;
+        _family = ((sockaddr_in*)addr.data())->sin_family;
     
     return error() == 0;
 }

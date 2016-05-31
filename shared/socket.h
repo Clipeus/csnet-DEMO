@@ -83,7 +83,7 @@ public:
         {
             // read a variable size data
             //int8_t buf_temp[_buffsize];
-            std::vector<int8_t> buf_temp(_buffsize);
+            std::array<int8_t, _buffsize> buf_temp;
             size_t num = 0;
             
             do
@@ -126,7 +126,7 @@ public:
         {
             // read a variable size string
             //char buf_temp[_buffsize + 1];
-            std::vector<char> buf_temp(_buffsize + 1);
+            std::array<char, _buffsize + 1> buf_temp;
             size_t num = 0;
             size_t size = 0;
             
@@ -240,7 +240,7 @@ protected:
     // write timeout
     int _recv_timeout = -1;
     // temp buffer size
-    static const size_t _buffsize = 128;
+    static constexpr size_t _buffsize = 128;
     // last error socket
     mutable int _error = 0;
     // last socket error message

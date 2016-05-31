@@ -46,8 +46,8 @@ packet_info_t* packet_socket_t::receive() const
 bool packet_socket_t::send(const packet_info_t& packet, const std::string& text) const
 {
     size_t size = sizeof(packet_info_t) + text.size() + sizeof(char);
-    std::unique_ptr<char> data(new char[size]);
-    packet_text_t* packet_text = reinterpret_cast<packet_text_t*>(data.get());
+    std::vector<char> data(size);
+    packet_text_t* packet_text = reinterpret_cast<packet_text_t*>(data.data());
     
     std::memmove(packet_text, &packet, sizeof(packet_info_t));
     std::strcpy(packet_text->text, text.c_str());
@@ -59,8 +59,8 @@ bool packet_socket_t::send(const packet_info_t& packet, const std::string& text)
 bool packet_socket_t::send(const packet_info_t& packet, const int8_t* data, size_t data_size) const
 {
     size_t size = sizeof(packet_info_t) + data_size;
-    std::unique_ptr<int8_t> d(new int8_t[size]);
-    packet_data_t* packet_data = reinterpret_cast<packet_data_t*>(d.get());
+    std::vector<int8_t> d(size);
+    packet_data_t* packet_data = reinterpret_cast<packet_data_t*>(d.data());
     
     std::memmove(packet_data, &packet, sizeof(packet_info_t));
     std::memmove(packet_data->data, data, data_size);
