@@ -147,7 +147,7 @@ std::string logger_t::cur_time() const
     std::stringstream buf;
 
     std::array<char, 80> time;
-    size_t size = strftime(time.data(), time.size(), "%Y-%m-%d %X", timeinfo);
+    strftime(time.data(), time.size(), "%Y-%m-%d %X", timeinfo);
     buf << time.data() << "." << std::setfill('0') << std::setw(3) << msec;
     
     return buf.str();
