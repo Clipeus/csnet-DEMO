@@ -11,3 +11,5 @@ Use build-all.sh to build all.
 Use build-client.sh build a client.
 Use build-server.sh build a server.
 
+Now the prokect can be build for Windows in Visual Studio 2015. Use csnet.sln for it.
+
