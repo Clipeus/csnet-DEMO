@@ -12,11 +12,12 @@ namespace shared
 class settings_provider_t
 {
 public:
-    
 	// read value by 'name' from 'section'
     virtual std::string get_value(const std::string& section, const std::string& name) const = 0;
 	// write value by 'name' from 'section'
 	virtual std::string set_value(const std::string& section, const std::string& name, const std::string& value) = 0;
+
+    virtual ~settings_provider_t() = default;
 };
 
 // store settings base class
