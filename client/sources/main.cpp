@@ -155,16 +155,16 @@ void do_in_thread(int count, T func, Args&&... args)
     for (int i = 0; i < count; i++)
     {
         // pass function and its param(s) to a thread function
-        threads[i] = std::thread([=](Args&&... _args)
+        threads[i] = std::thread([=](typename std::decay<T>::type &&f, typename std::decay<Args>::type &&... args)
         {
             // exceute function
-            std::string r = func(std::forward<Args>(_args)...);
+            std::string r = func(std::forward<Args>(args)...);
 
             // print result
             std::lock_guard<std::mutex> lck(_mtx);
             std::cout << "recieved: " << r << std::endl;
 
-        }, std::forward<Args>(args)...);
+        }, std::forward<T>(func), std::forward<Args>(args)...);
     }
 
     // wait thread(s)
@@ -233,7 +233,7 @@ int main(int argc, char** args)
             {
                 std::cout << std::endl << "text: ";
                 std::getline(std::cin, cmd);
-                std::cout << "sending: " << cmd << std::endl;
+                //std::cout << "sending: " << cmd << std::endl;
                 do_in_thread(threads, std::function<std::string(const std::string&)>(echo), cmd);
             }
             else if (cmd == "2") // get time from server
