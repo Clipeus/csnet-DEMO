@@ -22,6 +22,8 @@ namespace shared
 // socket wrapper class
 class socket_t
 {
+    static constexpr size_t _MAX_LEN = (size_t)-1;
+
 public:
 
 #ifdef _WIN32
@@ -87,9 +89,9 @@ public:
 public:
     // receive a data from a socket
     // use vector<int8_t> as ingoing buffer
-    size_t receive(std::vector<int8_t>& buf, size_t size = -1, int flags = 0, sockaddr* addr = nullptr, size_t* len = nullptr) const
+    size_t receive(std::vector<int8_t>& buf, size_t size = _MAX_LEN, int flags = 0, sockaddr* addr = nullptr, size_t* len = nullptr) const
     {
-        if (size != -1)
+        if (size != _MAX_LEN)
         {
             // allocate buffer
             buf.resize(size);
@@ -130,9 +132,9 @@ public:
     
     // receive a string from a socket
     // use std::string as ingoing buffer
-    size_t receive(std::string& str, size_t size = -1, int flags = 0, sockaddr* addr = nullptr, size_t* len = nullptr) const
+    size_t receive(std::string& str, size_t size = _MAX_LEN, int flags = 0, sockaddr* addr = nullptr, size_t* len = nullptr) const
     {
-        if (size != -1)
+        if (size != _MAX_LEN)
         {
             // allocate buffer
             str.resize(size);
