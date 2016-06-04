@@ -12,7 +12,7 @@ template <class T>
 class singleton
 {
     friend struct deleter;
-    template<class U> friend class std::unique_ptr;
+    template<class U, class D> friend class std::unique_ptr;
     
 public:
     // singleton object pointer
@@ -31,6 +31,7 @@ protected:
     {
         std::unique_ptr<T, singleton<T>::deleter> temp(new T);
         _instance = std::move(temp);
+        return _instance.get();
     }
     
     // unique_ptr deletor
@@ -43,7 +44,7 @@ protected:
     virtual ~singleton() {}
     
 protected:
-    static std::unique_ptr<T, singleton<T>::deleter> _instance;
+    static std::unique_ptr<T, deleter> _instance;
 };
 
 }

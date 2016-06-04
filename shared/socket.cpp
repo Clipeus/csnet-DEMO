@@ -1,8 +1,18 @@
+
+#ifdef _WIN32
+#include <WS2tcpip.h>
+#define socket_errno() WSAGetLastError()
+#else
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#define closesocket(socket) close(socket)
+#define socket_errno() errno
+#endif
+
 #include <cstring>
 #include <sstream>
+#include <array>
 
 #include "socket.h"
 
@@ -68,7 +78,7 @@ bool socket_t::create(int family, int type, int protocol)
     
     _socket = ::socket(_family, type, protocol);
     if (_socket == INVALID_SOCKET_HANDLE)
-        set_error(errno);
+        set_error(socket_errno());
     
     return error() == 0;
 }
@@ -78,13 +88,13 @@ void socket_t::close()
 {
     if (_socket > 0)
     {
-        ::close(_socket);
+        ::closesocket(_socket);
         _socket = INVALID_SOCKET_HANDLE;
     }
 }
 
 // close the handle and attach new socket handle
-bool socket_t::attach(int socket)
+bool socket_t::attach(SOCKET_HANDLE socket)
 {
     close();
     
@@ -94,7 +104,7 @@ bool socket_t::attach(int socket)
     socklen_t len = sizeof(addr);
 
     if (::getsockname(_socket, (sockaddr*)addr.data(), &len) < 0)
-        set_error(errno);
+        set_error(socket_errno());
     else
         _family = ((sockaddr_in*)addr.data())->sin_family;
     
@@ -104,8 +114,13 @@ bool socket_t::attach(int socket)
 // set or clear blocking socket
 bool socket_t::set_blocking(bool blocking) const
 {
+#ifdef _WIN32
+    unsigned long ul = 1;
+    if (::ioctlsocket(_socket, FIONBIO, &ul) < 0)
+#else
     if (::fcntl(_socket, F_SETFL, O_NONBLOCK) < 0)
-        set_error(errno);
+#endif
+        set_error(socket_errno());
     return error() == 0;
 }
 
@@ -113,7 +128,7 @@ bool socket_t::set_blocking(bool blocking) const
 bool socket_t::connect(const sockaddr* addr, size_t len) const
 {
     if (::connect(_socket, addr, len) < 0)
-        set_error(errno);
+        set_error(socket_errno());
     return error() == 0;
 }
 
@@ -141,7 +156,7 @@ bool socket_t::accept(socket_t& socket, sockaddr* addr, size_t* len) const
     int new_socket = ::accept(_socket, addr, (socklen_t*)len);
     if (new_socket < 0)
     {
-        set_error(errno);
+        set_error(socket_errno());
         return false;
     }
     return socket.attach(new_socket);
@@ -151,7 +166,7 @@ bool socket_t::accept(socket_t& socket, sockaddr* addr, size_t* len) const
 bool socket_t::bind(const sockaddr* addr, size_t len) const
 {
    if (::bind(_socket, addr, len) < 0)
-        set_error(errno);
+        set_error(socket_errno());
     return error() == 0;
 }
 
@@ -159,50 +174,83 @@ bool socket_t::bind(const sockaddr* addr, size_t len) const
 bool socket_t::listen(int queue) const
 {
    if (::listen(_socket, queue) < 0)
-        set_error(errno);
+        set_error(socket_errno());
     return error() == 0;
 }
 
 // cheack is socket ready to read
 // if sec != -1 use timeout
 // is sec == -1 w/o waiting
-bool socket_t::read_ready(int sec, int nsec, const sigset_t* sigmask) const
+#ifdef _WIN32
+bool socket_t::read_ready(int sec, int usec) const
+#else
+bool socket_t::read_ready(int sec, int usec, const sigset_t* sigmask) const
+#endif
 {
     fd_set fds;
 
     FD_ZERO(&fds);
     FD_SET(_socket, &fds);
 
-    timespec ts;
-    ts.tv_sec = sec;
-    ts.tv_nsec = nsec;
-    
-    return is_ready(&fds, nullptr, nullptr, sec == -1 ? nullptr : &ts, sigmask);
+    timeval tv;
+    tv.tv_sec = sec;
+    tv.tv_usec = usec;
+
+#ifdef _WIN32
+    return is_ready(&fds, nullptr, nullptr, sec == -1 ? nullptr : &tv);
+#else
+    return is_ready(&fds, nullptr, nullptr, sec == -1 ? nullptr : &tv, sigmask);
+#endif
 }
 
 // cheack is socket ready to write
 // if sec != -1 use timeout
 // is sec == -1 w/o waiting
-bool socket_t::write_ready(int sec, int nsec, const sigset_t* sigmask) const
+#ifdef _WIN32
+bool socket_t::write_ready(int sec, int usec) const
+#else
+bool socket_t::write_ready(int sec, int usec, const sigset_t* sigmask) const
+#endif
 {
     fd_set fds;
 
     FD_ZERO(&fds);
     FD_SET(_socket, &fds);
 
-    timespec ts;
-    ts.tv_sec  = sec;
-    ts.tv_nsec = nsec;
+    timeval tv;
+    tv.tv_sec = sec;
+    tv.tv_usec = usec;
 
-    return is_ready(nullptr, &fds, nullptr, sec == -1 ? nullptr : &ts, sigmask);
+#ifdef _WIN32
+    return is_ready(nullptr, &fds, nullptr, sec == -1 ? nullptr : &tv);
+#else
+    return is_ready(nullptr, &fds, nullptr, sec == -1 ? nullptr : &tv, sigmask);
+#endif
 }
 
 // cheack is socket ready
 // use 'pselect' to check it
-bool socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timespec* ts, const sigset_t* sigmask) const
+#ifdef _WIN32
+bool socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv) const
+#else
+bool socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv, const sigset_t* sigmask) const
+#endif
 {
-    if (::pselect(_socket + 1, rs, ws, es, ts, sigmask) <= 0)
-        set_error(errno);
+#ifdef _WIN32
+    if (::select(_socket + 1, rs, ws, es, tv) <= 0)
+#else
+    timespec* pts = nullptr;
+    timespec ts;
+    if (tv != nullptr)
+    {
+        ts.tv_sec = tv->tv_sec;
+        ts.tv_nsec = tv->tv_usec * 1000;
+        pts = &ts;
+    }
+
+    if (::pselect(_socket + 1, rs, ws, es, pts, sigmask) <= 0)
+#endif
+        set_error(socket_errno());
     return error() == 0;
 }
 
@@ -218,12 +266,12 @@ size_t socket_t::receive(void* buf, size_t size, int flags, sockaddr* addr, size
 
     int num = 0;
     if (addr != nullptr && len != 0)
-        num = ::recvfrom(_socket, buf, size, flags, addr, (socklen_t*)len);
+        num = ::recvfrom(_socket, reinterpret_cast<char*>(buf), size, flags, addr, (socklen_t*)len);
     else
-        num = ::recv(_socket, buf, size, flags);
+        num = ::recv(_socket, reinterpret_cast<char*>(buf), size, flags);
     
     if (num == -1)
-        set_error(errno);
+        set_error(socket_errno());
     
     return num;
 }
@@ -240,12 +288,12 @@ size_t socket_t::send(const void* buf, size_t size, int flags, const sockaddr* a
 
     int num = 0;
     if (addr != nullptr && len != 0)
-        num = ::sendto(_socket, buf, size, flags, addr, (socklen_t)len);
+        num = ::sendto(_socket, reinterpret_cast<const char*>(buf), size, flags, addr, (socklen_t)len);
     else
-        num = ::send(_socket, buf, size, flags);
+        num = ::send(_socket, reinterpret_cast<const char*>(buf), size, flags);
     
     if (num == -1)
-        set_error(errno);
+        set_error(socket_errno());
     
     return num;
 }
@@ -291,9 +339,22 @@ std::string socket_t::error_msg() const
         return _error_msg;
     
     if (_error != 0)
-        _error_msg = strerror(_error);
+        _error_msg = socket_strerror(_error);
     
     return _error_msg; 
+}
+
+std::string socket_t::socket_strerror(int e) const
+{
+#ifdef _WIN32
+    std::array<char, 1024> buffer;
+    if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, e, MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT), buffer.data(), 1024, nullptr))
+        return "Unknown error";
+
+    return buffer.data();
+#else
+    return strerror(_error);
+#endif
 }
 
 }

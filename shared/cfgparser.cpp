@@ -1,7 +1,11 @@
+#ifdef _WIN32
+#else
 #include <unistd.h>
+#include <libgen.h>
+#endif
+
 #include <limits.h>
 #include <cstdlib>
-#include <libgen.h>
 #include <sstream>
 #include <stdexcept>
 #include <cctype>
@@ -45,6 +49,9 @@ void cfgparser_t::openfile(const std::string& filename)
 std::string cfgparser_t::findfile(const std::string& filename) const
 {
     std::string cfg = filename;
+
+#ifdef _WIN32
+#else
     // if file exists use specified file name
     if (access(cfg.c_str(), F_OK) == -1)
     {
@@ -77,6 +84,7 @@ std::string cfgparser_t::findfile(const std::string& filename) const
                 return cfg;
         }
     }
+#endif
     return cfg;
 }
 

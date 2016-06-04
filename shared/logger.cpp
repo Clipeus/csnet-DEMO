@@ -1,13 +1,17 @@
+#ifdef _WIN32
+#else
+#include <unistd.h>
+#include <libgen.h>
+#endif
+
 #include <cstdio>
 #include <cstdarg>
 #include <thread>
 #include <chrono>
 #include <ctime>
 #include <sstream>
-#include <unistd.h>
 #include <limits.h>
 #include <cstdlib>
-#include <libgen.h>
 
 #include "logger.h"
 
@@ -32,7 +36,7 @@ bool logger_t::open(const std::string& filename)
 {
     std::string fn = findfile(filename);
     _file.open(fn, std::fstream::out | std::fstream::trunc);
-    return _file;
+    return (bool)_file;
 }
 
 // find log file
@@ -40,6 +44,8 @@ std::string logger_t::findfile(const std::string& filename) const
 {
     std::string log = filename;
     
+#ifdef _WIN32
+#else
     if (log.empty()) // if file is not specified use exe-name + .log
     {
         char dest[PATH_MAX];
@@ -64,6 +70,8 @@ std::string logger_t::findfile(const std::string& filename) const
             log += "/" + fn;
         }
     }
+#endif
+
     return log;
 }
 

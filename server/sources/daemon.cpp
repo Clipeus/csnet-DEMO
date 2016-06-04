@@ -1,4 +1,8 @@
+#ifdef _WIN32
+#else
 #include <unistd.h>
+#endif
+
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
@@ -17,7 +21,7 @@ using namespace shared;
 daemon_t::daemon_t(int argc, char** args) : _argc(argc), _args(args)
 {
     mysettings_t::instance()->load();
-    logger_t::instance()->stdout(true);
+    logger_t::instance()->use_stdout(true);
 }
 
 daemon_t::~daemon_t()
@@ -47,7 +51,7 @@ bool daemon_t::parse_cmd()
 {
     if (_argc <= 1)
     {
-        std::cout << "Usage ./test -d for daemon or ./test -i for interactive" << std::endl;
+        std::cout << "Usage ./myserver -d for daemon or ./myserver -i for interactive" << std::endl;
         return false;
     }
     else if (std::strcmp(_args[1], "-i") == 0)
@@ -57,14 +61,19 @@ bool daemon_t::parse_cmd()
     }
     else if (std::strcmp(_args[1], "-d") == 0)
     {
+#ifdef _WIN32
+        std::cerr << "Cannot create daemon in Windows" << std::endl;
+        return false;
+#else
         if (daemon(0, 0) == -1)
         {
             std::cerr << "daemon failed" << std::endl;
             return false;
         }
         mysettings_t::instance()->set_daemon(true);
-        logger_t::instance()->stdout(false);
+        logger_t::instance()->use_stdout(false);
         return true;
+#endif
     }
     else
     {

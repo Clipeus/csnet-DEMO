@@ -1,11 +1,4 @@
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <stdexcept>
 #include <string>
 #include <cstring>
@@ -221,6 +214,11 @@ int main(int argc, char** args)
 {
     try
     {
+#ifdef _WIN32
+        WSADATA wsaData;
+        WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
+
         mysettings_t::instance()->load();
 
         std::cout << std::endl << "Demo Client Application, version 1.0" << std::endl;
@@ -299,5 +297,9 @@ int main(int argc, char** args)
         std::cerr << "Error occurred: " << "unexception error." << std::endl;
     }
     
+#ifdef _WIN32
+    WSACleanup();
+#endif
+
     return -1;
 }

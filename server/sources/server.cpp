@@ -1,10 +1,15 @@
+#ifdef _WIN32
+#else
 #include <unistd.h>
+#endif
+
 #include <stdexcept>
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <memory>
 #include <chrono>
+#include <ctime>
 
 #include "server.h"
 #include "logger.h"
@@ -19,11 +24,19 @@ using namespace shared;
 
 server_t::server_t() : _signal(this, &server_t::onsignal)
 {
+#ifdef _WIN32
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 }
 
 server_t::~server_t()
 {
     close();
+
+#ifdef _WIN32
+    WSACleanup();
+#endif
 }
 
 void server_t::close()
@@ -60,7 +73,11 @@ void server_t::init_socket()
 void server_t::init_signal()
 {
     // connect to signals
+#ifdef _WIN32
+#else
     _signal.connect(SIGQUIT);
+#endif
+
     _signal.connect(SIGINT);
     _signal.connect(SIGTERM);
     
@@ -72,7 +89,11 @@ void server_t::onsignal(const signal_t<server_t>* sender, int signal)
 {
     logger_t::instance()->logout("Signal occurred: %s (%u).\n", sender->signame(signal).c_str(), signal);
     
+#ifdef _WIN32
+    if (signal == SIGINT || signal == SIGTERM)
+#else
     if (signal == SIGQUIT || signal == SIGINT || signal == SIGTERM)
+#endif
     {
         // need to exit
         _finished = true;
@@ -85,6 +106,8 @@ void server_t::onsignal(const signal_t<server_t>* sender, int signal)
 // server main routine
 int server_t::run()
 {
+    int status = 0;
+
     try
     {
         init_socket();
@@ -92,8 +115,6 @@ int server_t::run()
         
         // init thread pool by threads number
         thread_pool_t pool(mysettings_t::instance()->pool_count());
-        
-        int status = 0;
         
         // main server loop
         while (!is_finished())
@@ -126,10 +147,13 @@ int server_t::run()
                     buf << "Socket accepting failed: " << _listener.error_msg();
                     throw std::runtime_error(buf.str());
                 }
+
+                socket_t::SOCKET_HANDLE hsocket = accepted.detach();
                 
                 logger_t::instance()->logout("Add job to pool.\n");
-                pool.enqueue([this, socket = std::move(accepted)] // handle net request
+                pool.enqueue([this, hsocket] // handle net request
                 {
+                    packet_socket_t socket(hsocket);
                     // thread code
                     logger_t::instance()->logout("Recieving socket data.\n");
                     
@@ -210,20 +234,23 @@ int server_t::run()
 
         // wait and close all thread tasks
         pool.close(true, true);
-        return status;
     }
     catch (std::exception& e)
     {
         std::stringstream buf;
         buf << "Error occurred: " << e.what() << std::endl;
         logger_t::instance()->logout(buf.str().c_str());
+        status = -1;
     }
     catch (...)
     {
         std::stringstream buf;
         buf << "Error occurred: " << "unexception error." << std::endl;
         logger_t::instance()->logout(buf.str().c_str());
+        status = -2;
     }
+
+    return status;
 }
 
 // true if need to exit
@@ -236,9 +263,12 @@ bool server_t::is_finished()
 // execute command and get its result
 std::string server_t::exec(const std::string& cmd) 
 {
-    std::array<char, 128 + 1> buffer;
     std::string result = "";
     
+#ifdef _WIN32
+    result = "Execute command is not implementet on Windows yet.";
+#else
+    std::array<char, 128 + 1> buffer;
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) 
         throw std::runtime_error("popen() failed!");
@@ -261,6 +291,7 @@ std::string server_t::exec(const std::string& cmd)
     }
     
     pclose(pipe);
+#endif
     return result;
 }
 

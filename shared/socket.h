@@ -1,12 +1,18 @@
 #pragma once
 
+#ifdef _WIN32
+#include <winsock.h>
+#else
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
+#endif
+
 #include <string>
 #include <vector>
 #include <memory>
+#include <array>
 
 namespace csnet
 {
@@ -16,7 +22,16 @@ namespace shared
 // socket wrapper class
 class socket_t
 {
-    static constexpr int INVALID_SOCKET_HANDLE = -1;
+public:
+
+#ifdef _WIN32
+    typedef SOCKET SOCKET_HANDLE;
+#else
+    typedef int SOCKET_HANDLE;
+#endif
+
+    static constexpr SOCKET_HANDLE INVALID_SOCKET_HANDLE = -1;
+
 public:
     // default constuctor
     socket_t();
@@ -50,12 +65,20 @@ public:
     // cheack is socket ready to read
     // if sec != -1 use timeout
     // is sec == -1 w/o waiting
-    bool read_ready(int sec = -1, int nsec = 0, const sigset_t* sigmask = nullptr) const;
+#ifdef _WIN32
+    bool read_ready(int sec = -1, int usec = 0) const;
+#else
+    bool read_ready(int sec = -1, int usec = 0, const sigset_t* sigmask = nullptr) const;
+#endif
     // cheack is socket ready to write
     // if sec != -1 use timeout
     // is sec == -1 w/o waiting
-    bool write_ready(int sec = -1, int nsec = 0, const sigset_t* sigmask = nullptr) const;
-    
+#ifdef _WIN32
+    bool write_ready(int sec = -1, int usec = 0) const;
+#else
+    bool write_ready(int sec = -1, int usec = 0, const sigset_t* sigmask = nullptr) const;
+#endif
+
     // receive a message from a socket
     size_t receive(void *buf, size_t size, int flags = 0, sockaddr* addr = nullptr, size_t* len = nullptr) const;
     // send a message on a socket
@@ -170,21 +193,21 @@ public:
 
 public:
     // close the handle and attach new socket handle
-    bool attach(int socket);
+    bool attach(SOCKET_HANDLE socket);
     // return the socket handle and detach it
-    int detach()
+    SOCKET_HANDLE detach()
     {
         int s = socket();
         _socket = INVALID_SOCKET_HANDLE;
         return s;
     }
     // return the socket handle
-    int socket() const
+    SOCKET_HANDLE socket() const
     {
         return _socket;
     }
     // return the socket handle
-    operator int () const
+    operator SOCKET_HANDLE () const
     {
         return socket();
     }
@@ -218,7 +241,11 @@ public:
     
 protected:
     // cheack is socket ready
-    bool is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timespec* ts = nullptr, const sigset_t* sigmask = nullptr) const;
+#ifdef _WIN32
+    bool is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timeval* tv = nullptr) const;
+#else
+    bool is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timeval* tv = nullptr, const sigset_t* sigmask = nullptr) const;
+#endif
     // get ip address by host name
     hostent* gethostbyname(const std::string& name) const;
     // move socket from other and than detach it
@@ -229,10 +256,11 @@ protected:
         _error = e;
         _error_msg.clear();
     }
+    std::string socket_strerror(int e) const;
 
 protected:
     // socket handle
-    int _socket = INVALID_SOCKET_HANDLE;
+    SOCKET_HANDLE _socket = INVALID_SOCKET_HANDLE;
     // communication family
     int _family = AF_INET;
     // read timeout

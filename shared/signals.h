@@ -1,5 +1,10 @@
 #pragma once
 
+#ifdef _WIN32
+#include <sstream>
+#else
+#endif
+
 #include <csignal>
 #include <cstring>
 #include <utility>
@@ -69,7 +74,13 @@ public:
     // gt signal name
     std::string signame(int signal) const
     {
+#ifdef _WIN32
+        std::stringstream msg;
+        msg << "Windows signal #" << signal;
+        return msg.str();
+#else
         return strsignal(signal);
+#endif
     }
 
     // internal signal handler

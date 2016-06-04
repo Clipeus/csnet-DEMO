@@ -26,6 +26,7 @@ mysettings_t* mysettings_t::create()
 {
     std::unique_ptr<mysettings_t, singleton<mysettings_t>::deleter> temp(new mysettings_t(new cfgparser_t("client.cfg")));
     _instance = std::move(temp);
+    return _instance.get();
 }
 
 // load settings

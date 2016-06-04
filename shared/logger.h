@@ -34,7 +34,7 @@ public:
         return &_instance;
     }
     // double a log to stdout
-    void stdout(bool out)
+    void use_stdout(bool out)
     {
         _stdout = out;
     }
