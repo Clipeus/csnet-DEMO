@@ -114,7 +114,7 @@ void do_in_thread(int count, T func, Args&&... args)
     for (int i = 0; i < count; i++)
     {
         // pass function and its param(s) to a thread function
-        threads[i] = std::thread([=](typename std::decay<Args>::type &&... args)
+        threads[i] = std::thread([=](std::decay_t<Args>&&... args)
         {
             // exceute function
             std::string r = func(std::forward<Args>(args)...);
