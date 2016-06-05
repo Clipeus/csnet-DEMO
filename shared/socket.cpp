@@ -255,12 +255,16 @@ int socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv, const si
 
     //if (ret = ::WaitForMultipleObjectsEx(size, handles.data(), FALSE, timeout, TRUE) == WSA_WAIT_FAILED)
 
-    if (rs)
-        FD_SET(cancel, rs);
-    else if (ws)
-        FD_SET(cancel, ws);
-    else if (es)
-        FD_SET(cancel, es);
+    if (cancel != INVALID_SOCKET)
+    {
+        if (rs)
+            FD_SET(cancel, rs);
+        else if (ws)
+            FD_SET(cancel, ws);
+        else if (es)
+            FD_SET(cancel, es);
+        //else nothing to wait
+    }
 
     if ((ret = ::select(0, rs, ws, es, tv)) <= 0)
 #else
