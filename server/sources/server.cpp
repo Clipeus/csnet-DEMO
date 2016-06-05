@@ -26,7 +26,7 @@ server_t::server_t() : _signal(this, &server_t::onsignal)
 {
 #ifdef _WIN32
     WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    ::WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 }
 
@@ -35,7 +35,9 @@ server_t::~server_t()
     close();
 
 #ifdef _WIN32
-    WSACleanup();
+    if  (_cancel == INVALID_SOCKET)
+        ::closesocket(_cancel);
+    ::WSACleanup();
 #endif
 }
 
@@ -53,7 +55,7 @@ void server_t::init_socket()
         throw std::runtime_error(buf.str());
     }
     
-    _listener.set_blocking(true);
+    _listener.set_unblocking(true);
     
     // init and bind socket
     sockaddr_in addr;
@@ -73,14 +75,17 @@ void server_t::init_socket()
 void server_t::init_signal()
 {
     // connect to signals
+
 #ifdef _WIN32
+    // init cancel event for Ctrl+C signal
+    // need to notify select() to exit
+    _cancel = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 #else
     _signal.connect(SIGQUIT);
 #endif
 
     _signal.connect(SIGINT);
     _signal.connect(SIGTERM);
-    
     //_signal.connect(SIGHUP);
 }
 
@@ -97,6 +102,16 @@ void server_t::onsignal(const signal_t<server_t>* sender, int signal)
     {
         // need to exit
         _finished = true;
+
+#ifdef _WIN32
+        // set cancel event to exit
+        if (_cancel != INVALID_SOCKET)
+        {
+            // notify select() to exit
+            ::closesocket(_cancel);
+            _cancel = INVALID_SOCKET;
+        }
+#endif
     }
     /*else if (signal == SIGHUP)
     {
@@ -122,8 +137,12 @@ int server_t::run()
             logger_t::instance()->logout("Waitnig for connection.\n");
             
             // wait socket data to read
+#ifdef _WIN32
+            int ret = _listener.read_ready(-1, 0, _cancel);
+#else
             int ret = _listener.read_ready();
-            if ( ret < 0)
+#endif
+            if (ret < 0 || is_finished())
             {
                 if (is_finished())
                 {

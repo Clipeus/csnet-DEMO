@@ -27,6 +27,10 @@ protected:
     shared::socket_t _listener;
     bool _finished = false;
     shared::signal_t<server_t> _signal;
+
+#ifdef _WIN32
+    SOCKET _cancel = INVALID_SOCKET;
+#endif
 };
 
 }

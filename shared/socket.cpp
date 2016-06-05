@@ -27,7 +27,7 @@ socket_t::socket_t()
 }
 
 // move constructor (copy constructor is not allowed)
-socket_t::socket_t(const socket_t&& socket)
+socket_t::socket_t(socket_t&& socket)
 {
     move(socket);
 }
@@ -45,7 +45,7 @@ socket_t::~socket_t()
 }
 
 // move socket from other and than detach it
-socket_t& socket_t::operator=(const socket_t&& socket)
+socket_t& socket_t::operator=(socket_t&& socket)
 {
     if (&socket != this)
         move(socket);
@@ -54,7 +54,7 @@ socket_t& socket_t::operator=(const socket_t&& socket)
 }
 
 // move socket from other and than detach it
-void socket_t::move(const socket_t& socket)
+void socket_t::move(socket_t& socket)
 {
     close();
     
@@ -67,8 +67,7 @@ void socket_t::move(const socket_t& socket)
     _error_msg = socket._error_msg;
     
     // need to detach source socket
-    socket_t* s = const_cast<socket_t*>(&socket);
-    _socket = s->detach();
+    _socket = socket.detach();
 }
 
 // create socket object
@@ -112,13 +111,13 @@ bool socket_t::attach(SOCKET_HANDLE socket)
 }
 
 // set or clear blocking socket
-bool socket_t::set_blocking(bool blocking) const
+bool socket_t::set_unblocking(bool unblocking) const
 {
 #ifdef _WIN32
-    unsigned long ul = 1;
+    unsigned long ul = unblocking;
     if (::ioctlsocket(_socket, FIONBIO, &ul) < 0)
 #else
-    if (::fcntl(_socket, F_SETFL, O_NONBLOCK) < 0)
+    if (::fcntl(_socket, F_SETFL, unblocking ? (fcntl(_socket, F_GETFL, 0) | O_NONBLOCK) : (fcntl(_socket, F_GETFL, 0) & ~O_NONBLOCK)) < 0)
 #endif
         set_error(socket_errno());
     return error() == 0;
@@ -182,9 +181,9 @@ bool socket_t::listen(int queue) const
 // if sec != -1 use timeout
 // is sec == -1 w/o waiting
 #ifdef _WIN32
-bool socket_t::read_ready(int sec, int usec) const
+int socket_t::read_ready(int sec, int usec, SOCKET cancel) const
 #else
-bool socket_t::read_ready(int sec, int usec, const sigset_t* sigmask) const
+int socket_t::read_ready(int sec, int usec, const sigset_t* sigmask) const
 #endif
 {
     fd_set fds;
@@ -197,7 +196,7 @@ bool socket_t::read_ready(int sec, int usec, const sigset_t* sigmask) const
     tv.tv_usec = usec;
 
 #ifdef _WIN32
-    return is_ready(&fds, nullptr, nullptr, sec == -1 ? nullptr : &tv);
+    return is_ready(&fds, nullptr, nullptr, sec == -1 ? nullptr : &tv, cancel);
 #else
     return is_ready(&fds, nullptr, nullptr, sec == -1 ? nullptr : &tv, sigmask);
 #endif
@@ -207,9 +206,9 @@ bool socket_t::read_ready(int sec, int usec, const sigset_t* sigmask) const
 // if sec != -1 use timeout
 // is sec == -1 w/o waiting
 #ifdef _WIN32
-bool socket_t::write_ready(int sec, int usec) const
+int socket_t::write_ready(int sec, int usec, SOCKET cancel) const
 #else
-bool socket_t::write_ready(int sec, int usec, const sigset_t* sigmask) const
+int socket_t::write_ready(int sec, int usec, const sigset_t* sigmask) const
 #endif
 {
     fd_set fds;
@@ -222,7 +221,7 @@ bool socket_t::write_ready(int sec, int usec, const sigset_t* sigmask) const
     tv.tv_usec = usec;
 
 #ifdef _WIN32
-    return is_ready(nullptr, &fds, nullptr, sec == -1 ? nullptr : &tv);
+    return is_ready(nullptr, &fds, nullptr, sec == -1 ? nullptr : &tv, cancel);
 #else
     return is_ready(nullptr, &fds, nullptr, sec == -1 ? nullptr : &tv, sigmask);
 #endif
@@ -231,13 +230,39 @@ bool socket_t::write_ready(int sec, int usec, const sigset_t* sigmask) const
 // cheack is socket ready
 // use 'pselect' to check it
 #ifdef _WIN32
-bool socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv) const
+int socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv, SOCKET cancel) const
 #else
-bool socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv, const sigset_t* sigmask) const
+int socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv, const sigset_t* sigmask) const
 #endif
 {
+    int ret = 0;
 #ifdef _WIN32
-    if (::select(_socket + 1, rs, ws, es, tv) <= 0)
+    //// unsupported es value in Windows
+    //unsigned long size = (rs ? rs->fd_count : 0) + (ws ? ws->fd_count : 0) + (cancel != INVALID_HANDLE_VALUE ? 1 : 0);
+    //std::vector<HANDLE> handles(size);
+
+    //unsigned long start = cancel != INVALID_HANDLE_VALUE ? 1 : 0;
+    //if (cancel != INVALID_HANDLE_VALUE)
+    //    handles[0] = cancel;
+
+    //if (rs)
+    //    std::copy(reinterpret_cast<HANDLE*>(rs->fd_array), reinterpret_cast<HANDLE*>(rs->fd_array) + rs->fd_count, handles.begin() + start);
+
+    //if (ws)
+    //    std::copy(reinterpret_cast<HANDLE*>(ws->fd_array), reinterpret_cast<HANDLE*>(ws->fd_array) + ws->fd_count, handles.begin() + (rs ? rs->fd_count : 0) + start);
+
+    //unsigned long timeout = tv ? (tv->tv_sec * 1000 + tv->tv_usec) : WSA_INFINITE;
+
+    //if (ret = ::WaitForMultipleObjectsEx(size, handles.data(), FALSE, timeout, TRUE) == WSA_WAIT_FAILED)
+
+    if (rs)
+        FD_SET(cancel, rs);
+    else if (ws)
+        FD_SET(cancel, ws);
+    else if (es)
+        FD_SET(cancel, es);
+
+    if ((ret = ::select(0, rs, ws, es, tv)) <= 0)
 #else
     timespec* pts = nullptr;
     timespec ts;
@@ -248,10 +273,10 @@ bool socket_t::is_ready(fd_set* rs, fd_set* ws, fd_set* es, timeval* tv, const s
         pts = &ts;
     }
 
-    if (::pselect(_socket + 1, rs, ws, es, pts, sigmask) <= 0)
+    if ((ret = ::pselect(_socket + 1, rs, ws, es, pts, sigmask)) < 0)
 #endif
         set_error(socket_errno());
-    return error() == 0;
+    return ret;
 }
 
 // receive a message from a socket

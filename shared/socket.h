@@ -25,33 +25,32 @@ class socket_t
     static constexpr size_t _MAX_LEN = (size_t)-1;
 
 public:
-
 #ifdef _WIN32
     typedef SOCKET SOCKET_HANDLE;
+    static constexpr SOCKET_HANDLE INVALID_SOCKET_HANDLE = INVALID_SOCKET;
 #else
     typedef int SOCKET_HANDLE;
-#endif
-
     static constexpr SOCKET_HANDLE INVALID_SOCKET_HANDLE = -1;
+#endif
 
 public:
     // default constuctor
     socket_t();
     // move constructor (copy constructor is not allowed)
-    socket_t(const socket_t&& socket);
+    socket_t(socket_t&& socket);
     // create from socket handle
     explicit socket_t(int socket);
     // destructor, clear resource
     virtual ~socket_t();
 
     // move socket from other and than detach it
-    socket_t& operator=(const socket_t&& socket);
+    socket_t& operator=(socket_t&& socket);
     // create socket object
     bool create(int family = AF_INET, int type = SOCK_STREAM, int protocol = 0);
     // close handle 
     void close();
     // set or clear blocking socket
-    bool set_blocking(bool blocking) const;
+    bool set_unblocking(bool unblocking) const;
 
 public:
     // initiate a connection on a socket
@@ -68,17 +67,17 @@ public:
     // if sec != -1 use timeout
     // is sec == -1 w/o waiting
 #ifdef _WIN32
-    bool read_ready(int sec = -1, int usec = 0) const;
+    int read_ready(int sec = -1, int usec = 0, SOCKET cancel = INVALID_SOCKET_HANDLE) const;
 #else
-    bool read_ready(int sec = -1, int usec = 0, const sigset_t* sigmask = nullptr) const;
+    int read_ready(int sec = -1, int usec = 0, const sigset_t* sigmask = nullptr) const;
 #endif
     // cheack is socket ready to write
     // if sec != -1 use timeout
     // is sec == -1 w/o waiting
 #ifdef _WIN32
-    bool write_ready(int sec = -1, int usec = 0) const;
+    int write_ready(int sec = -1, int usec = 0, SOCKET cancel = INVALID_SOCKET_HANDLE) const;
 #else
-    bool write_ready(int sec = -1, int usec = 0, const sigset_t* sigmask = nullptr) const;
+    int write_ready(int sec = -1, int usec = 0, const sigset_t* sigmask = nullptr) const;
 #endif
 
     // receive a message from a socket
@@ -244,14 +243,14 @@ public:
 protected:
     // cheack is socket ready
 #ifdef _WIN32
-    bool is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timeval* tv = nullptr) const;
+    int is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timeval* tv = nullptr, SOCKET cancel = INVALID_SOCKET_HANDLE) const;
 #else
-    bool is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timeval* tv = nullptr, const sigset_t* sigmask = nullptr) const;
+    int is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timeval* tv = nullptr, const sigset_t* sigmask = nullptr) const;
 #endif
     // get ip address by host name
     hostent* gethostbyname(const std::string& name) const;
     // move socket from other and than detach it
-    void move(const socket_t& socket);
+    void move(socket_t& socket);
     // set last error socket
     void set_error(int e) const
     {
