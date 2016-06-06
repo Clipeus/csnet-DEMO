@@ -41,6 +41,9 @@ void mysettings_t::load()
     _pool_count = std::min(std::atoi(val.c_str()), 128);
 
     _logfile = get_value("debug", "logfile");
+
+    val = get_value("debug", "log_disabled");
+    _log_disabled = to_bool(val);
 }
 
 // save settings

@@ -36,7 +36,8 @@ int daemon_t::run()
     if (!parse_cmd())
         return -1;
     
-    logger_t::instance()->open(mysettings_t::instance()->logfile());
+    if (!mysettings_t::instance()->log_disabled())
+        logger_t::instance()->open(mysettings_t::instance()->logfile());
 
     if (mysettings_t::instance()->daemon())
         LOGLINE("Server started as deamon application.");

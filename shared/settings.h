@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <sstream>
+#include <algorithm>
 
 namespace csnet
 {
@@ -52,6 +54,17 @@ protected:
         _provider->set_value(section, name, value);
     }
     
+    // convert string to bool
+    bool to_bool(const std::string& v) const
+    {
+        std::string str = v;
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+        std::istringstream is(str);
+        bool b;
+        is >> std::boolalpha >> b;
+        return b;
+    }
+
 protected:
     settings_provider_t* _provider = nullptr;
 };

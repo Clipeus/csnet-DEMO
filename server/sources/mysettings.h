@@ -47,6 +47,11 @@ public:
     {
         return _pool_count;
     }
+    // get is log disabled
+    bool log_disabled() const
+    {
+        return _log_disabled;
+    }
     // get logfile path
     std::string logfile() const
     {
@@ -54,11 +59,11 @@ public:
     }
     
 private:
-
     bool _daemon;
     int _port;
     int _pool_count;
     std::string _logfile;
+    bool _log_disabled;
 };
 
 }

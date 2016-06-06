@@ -10,28 +10,26 @@ namespace csnet
 namespace shared
 {
 
-#define STREAM(esc) \
-do \
-{ \
-    std::stringstream buf; \
-    buf << esc; \
-    buf.str(); \
-} while (false)
-
 #define LOGOUT(seq) \
 do \
 { \
-    std::stringstream buf; \
-    buf << seq; \
-    shared::logger_t::instance()->logout(buf.str()); \
+    if (shared::logger_t::instance()->opened()) \
+    { \
+        std::stringstream buf; \
+        buf << seq; \
+        shared::logger_t::instance()->logout(buf.str()); \
+    } \
 } while (false)
 
 #define LOGLINE(seq) \
 do  \
 { \
-    std::stringstream buf; \
-    buf << seq << std::endl; \
-    shared::logger_t::instance()->logout(buf.str()); \
+    if (shared::logger_t::instance()->opened()) \
+    { \
+        std::stringstream buf; \
+        buf << seq << std::endl; \
+        shared::logger_t::instance()->logout(buf.str()); \
+    } \
 } while (false)
     
     // log out class

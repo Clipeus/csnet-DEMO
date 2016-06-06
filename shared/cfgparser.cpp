@@ -1,4 +1,6 @@
 #ifdef _WIN32
+#include <windows.h>
+#include <filesystem>
 #else
 #include <unistd.h>
 #include <libgen.h>
@@ -51,6 +53,40 @@ std::string cfgparser_t::findfile(const std::string& filename) const
     std::string cfg = filename;
 
 #ifdef _WIN32
+    if (::GetFileAttributesA(cfg.c_str()) == -1)
+    {
+        //file not found try to find it
+        std::tr2::sys::path cfg_path(cfg);
+
+        // get process full path
+        std::array<char, MAX_PATH + 1> full_path;
+        ::GetModuleFileNameA(::GetModuleHandle(nullptr), full_path.data(), MAX_PATH);
+
+        std::tr2::sys::path path(full_path.data());
+
+        // process name + '.cfg' OR cfg name w/o path
+        std::string fn = cfg.empty() ? path.replace_extension(".cfg").filename().string() : cfg_path.filename().string();
+        // process path w/o name
+        std::string dn = path.parent_path().string();
+
+        //try to find it in the current dir
+        cfg = fn;
+        if (::GetFileAttributesA(cfg.c_str()) != -1)
+            return cfg;
+
+        //try to find it in the process path
+        cfg = dn;
+        cfg += "\\" + fn;
+        if (::GetFileAttributesA(cfg.c_str()) != -1)
+            return cfg;
+
+        //try to find it in cfg dir
+        cfg = dn;
+        cfg += "\\..\\cfg\\";
+        cfg += fn;
+        if (::GetFileAttributesA(cfg.c_str()) != -1)
+            return cfg;
+    }
 #else
     // if file exists use specified file name
     if (access(cfg.c_str(), F_OK) == -1)

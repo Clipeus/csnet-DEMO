@@ -1,5 +1,6 @@
 #ifdef _WIN32
 #include <windows.h>
+#include <filesystem>
 #else
 #include <unistd.h>
 #include <libgen.h>
@@ -48,14 +49,40 @@ std::string logger_t::findfile(const std::string& filename) const
     std::string log = filename;
     
 #ifdef _WIN32
+    std::tr2::sys::path log_path(log);
+    if (log.empty()) // if file is not specified use exe-name + .log
+    {
+        // get process full path
+        std::array<char, MAX_PATH + 1> full_path;
+        ::GetModuleFileNameA(::GetModuleHandle(nullptr), full_path.data(), MAX_PATH);
+
+        std::tr2::sys::path path(full_path.data());
+        log = path.parent_path().string() + '\\' + path.replace_extension(".log").filename().string();
+    }
+    else if (!log_path.has_root_path()) // if dir is not specified use exe dir
+    {
+        // get process full path
+        std::array<char, MAX_PATH + 1> full_path;
+        ::GetModuleFileNameA(::GetModuleHandle(nullptr), full_path.data(), MAX_PATH);
+
+        std::tr2::sys::path path(full_path.data());
+        log = path.parent_path().string() + '\\' + log_path.filename().string();
+    }
 #else
     if (log.empty()) // if file is not specified use exe-name + .log
     {
         char dest[PATH_MAX];
         if (readlink("/proc/self/exe", dest, PATH_MAX) != -1) // get process full path
         {
-            // process name + '.log' OR log name w/o path
-            log = (basename(dest) + std::string(".log"));
+            // process path
+            std::string fn = basename(dest);
+            // process name
+            std::string dn = dirname(dest);
+
+            // build log file
+            log = dn;
+            log += "/" + fn;
+            log += ".log";
         }
     }
     else if (dirname(&log.front()) == nullptr || *dirname(&log.front()) == '.') // if dir is not specified use exe dir
@@ -63,12 +90,12 @@ std::string logger_t::findfile(const std::string& filename) const
         char dest[PATH_MAX];
         if (readlink("/proc/self/exe", dest, PATH_MAX) != -1) // get process full path
         {
-            // process name + '.log' OR log name w/o path
+            // process name
             std::string fn = basename(&log.front());
-            // process path w/o name
+            // process name
             std::string dn = dirname(dest);
             
-            //try to find it in the process path
+            // build log file
             log = dn;
             log += "/" + fn;
         }
