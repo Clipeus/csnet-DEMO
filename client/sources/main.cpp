@@ -9,6 +9,7 @@
 #include <chrono>
 #include <memory>
 #include <iomanip>
+#include <functional>
 
 #include "mysettings.h"
 #include "socket.h"
@@ -30,6 +31,7 @@ packet_socket_t get_socket()
         buf << "Error occurred: " << socket.error_msg();
         throw std::runtime_error(buf.str());
     }
+
     if (!socket.connect(mysettings_t::instance()->host().c_str(), mysettings_t::instance()->port()))
     {
         buf << "Error occurred: " <<  socket.error_msg();
@@ -40,14 +42,16 @@ packet_socket_t get_socket()
 }
 
 // send request to server and get current time from server
-std::string time()
+std::string gettime()
 {
     try
     {
         packet_socket_t socket = get_socket();
         
+        // send request to server
         if (socket.send(packet_info_t(packet_kind::P_BASE_KIND, packet_type::P_DATA_TYPE, packet_code::P_TIME_ACTION)))
         {
+            // receive response from server
             std::unique_ptr<packet_data_t> packet(socket.receive_data());
             if (packet && packet->kind == packet_kind::P_BASE_KIND && packet->type == packet_type::P_DATA_TYPE && packet->action == (packet_code::P_TIME_ACTION | packet_code::P_RETURN_ACTION))
             {
@@ -82,35 +86,17 @@ std::string time()
     }
 }
 
-// send request to server and get current time from server in a thread
-void time_thread(int count)
-{
-    std::vector<std::thread> threads(count);
-
-    for (int i = 0; i < count; i++)
-    {
-        threads[i] = std::thread([]
-        {
-            std::string r = time();
-            std::lock_guard<std::mutex> lck (_mtx);
-            std::cout << "recieved: " << r << std::endl;
-        });
-    }
-
-    for (int i = 0; i < count; i++)
-        threads[i].join();
-}
-
-
 // send text to echo server and get echo from server
-std::string send(const std::string& text)
+std::string echo(const std::string& text)
 {
     try
     {
         packet_socket_t socket = get_socket();
         
+        // send request to server
         if (socket.send(packet_info_t(packet_kind::P_BASE_KIND, packet_type::P_TEXT_TYPE, packet_code::P_ECHO_ACTION), text))
         {
+            // receive response from server
             std::unique_ptr<packet_text_t> packet(socket.receive_text());
             if (packet)
                 return packet->text;
@@ -130,26 +116,6 @@ std::string send(const std::string& text)
     }
 }
 
-// send text to echo server and get echo from server in a thread
-void send_thread(int count, const std::string& text)
-{
-    std::vector<std::thread> threads(count);
-
-    for (int i = 0; i < count; i++)
-    {
-        threads[i] = std::thread([text]
-        {
-            std::string r = send(text);
-            std::lock_guard<std::mutex> lck (_mtx);
-            std::cout << "recieved: " << r << std::endl;
-        });
-    }
-
-    for (int i = 0; i < count; i++)
-        threads[i].join();
-    
-}
-
 // send command to server and get command's result
 std::string execmd(const std::string& cmd)
 {
@@ -157,8 +123,10 @@ std::string execmd(const std::string& cmd)
     {
         packet_socket_t socket = get_socket();
         
+        // send request to server
         if (socket.send(packet_info_t(packet_kind::P_BASE_KIND, packet_type::P_TEXT_TYPE, packet_code::P_EXECMD_ACTION), cmd))
         {
+            // receive response from server
             std::unique_ptr<packet_text_t> packet(socket.receive_text());
             if (packet)
                 return packet->text;
@@ -179,23 +147,29 @@ std::string execmd(const std::string& cmd)
 }
 
 // send command to server and get command's result in a thread
-void execmd_thread(int count, const std::string& cmd)
+template <class T, typename... Args>
+void do_in_thread(int count, T func, Args&&... args)
 {
     std::vector<std::thread> threads(count);
 
     for (int i = 0; i < count; i++)
     {
-        threads[i] = std::thread([cmd]
+        // pass function and its param(s) to thread function
+        threads[i] = std::thread([=](Args&&... _args)
         {
-            std::string r = execmd(cmd);
-            std::lock_guard<std::mutex> lck (_mtx);
+            // exceute function
+            std::string r = func(std::forward<Args>(_args)...);
+
+            // print result
+            std::lock_guard<std::mutex> lck(_mtx);
             std::cout << "recieved: " << r << std::endl;
-        });
+
+        }, std::forward<Args>(args)...);
     }
 
+    // wait thread(s)
     for (int i = 0; i < count; i++)
         threads[i].join();
-    
 }
 
 // print help screen
@@ -235,16 +209,16 @@ int main(int argc, char** args)
             std::string cmd;
             getline(std::cin, cmd);
             
-            if (cmd == "q")
+            if (cmd == "q") // quit
             {
                 std::cout << "myclient is finished" << std::endl << std::endl;
                 break;
             }
-            else if (cmd == "h")
+            else if (cmd == "h") // help
             {
                 help();
             }
-            else if (cmd == "t")
+            else if (cmd == "t") // set threads count
             {
                 std::cout << "current request threads count: " << threads << std::endl;
                 std::cout << std::endl << "threads: ";
@@ -255,32 +229,23 @@ int main(int argc, char** args)
                 
                 std::cout << "current request threads count: " << threads << std::endl << std::endl;
             }
-            else if (cmd == "1")
+            else if (cmd == "1") // send text to echo server
             {
                 std::cout << std::endl << "text: ";
                 getline(std::cin, cmd);
                 std::cout << "sending: " << cmd << std::endl;
-                if (threads == 1)
-                    std::cout << "recieved: " << send(cmd) << std::endl;
-                else
-                    send_thread(threads, cmd);
+                do_in_thread(threads, std::function<std::string(const std::string&)>(echo), cmd);
             }
-            else if (cmd == "2")
+            else if (cmd == "2") // get time from server
             {
                 std::cout << "send time request" << std::endl;
-                if (threads == 1)
-                    std::cout << "recieved: " << time() << std::endl;
-                else
-                    time_thread(threads);
+                do_in_thread(threads, std::function<std::string()>(gettime));
             }
-            else if (cmd == "3")
+            else if (cmd == "3") // execute command on server
             {
                 std::cout << std::endl << "exec: ";
                 getline(std::cin, cmd);
-                if (threads == 1)
-                    std::cout << "recieved: " << execmd(cmd) << std::endl;
-                else
-                    execmd_thread(threads, cmd);
+                do_in_thread(threads, std::function<std::string(const std::string&)>(execmd), cmd);
             }
             else
             {
