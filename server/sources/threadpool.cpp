@@ -17,9 +17,7 @@ thread_pool_t::thread_pool_t(size_t threads) : _stop(false)
         (
             [this]
             {
-                std::stringstream id;
-                id << std::this_thread::get_id();
-                logger_t::instance()->logout("Thread #%s is started.\n", id.str().c_str());
+                LOGLINE("Thread " << std::this_thread::get_id() << " is started.");
                 
                 for(;;)
                 {
@@ -40,12 +38,12 @@ thread_pool_t::thread_pool_t(size_t threads) : _stop(false)
                         this->_tasks.pop();
                     }
 
-                    logger_t::instance()->logout("Thread #%s executes a task.\n", id.str().c_str());
+                    LOGLINE("Thread " << std::this_thread::get_id() << " executes a task.");
 
                     task(); // execute a task
                 }
                 
-                logger_t::instance()->logout("Thread #%s is finished.\n", id.str().c_str());
+                LOGLINE("Thread " << std::this_thread::get_id() << " is finished.");
             }
         );
     }
@@ -72,14 +70,14 @@ void thread_pool_t::close(bool wait, bool clear_tasks)
         if (_workers.size() == 0)
             return;
         
-        logger_t::instance()->logout("closing pool.\n");
-        logger_t::instance()->logout("tasks count %d.\n", _tasks.size());
+        LOGLINE("closing pool.");
+        LOGLINE("tasks count " << _tasks.size() << ".");
 
         _stop = true; // tell to all threads to exit
         
         if (clear_tasks)
         {
-            logger_t::instance()->logout("empty tasks.\n");
+            LOGLINE("empty tasks.");
             
             // empty task queue, does need to continue task process
             while (!_tasks.empty())
@@ -91,13 +89,13 @@ void thread_pool_t::close(bool wait, bool clear_tasks)
     
     if (wait)
     {
-        logger_t::instance()->logout("waiting for closing.\n");
-        
+        LOGLINE("waiting for closing.");
+
         // waiting for a closing all threads
         for(std::thread &worker: _workers)
             worker.join();
         
-        logger_t::instance()->logout("pool is closed.\n");
+        LOGLINE("pool is closed.");
     }
     else
     {

@@ -2,20 +2,53 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <mutex>
 
 namespace csnet
 {
 namespace shared
 {
+
+#define STREAM(esc) \
+do \
+{ \
+    std::stringstream buf; \
+    buf << esc; \
+    buf.str(); \
+} while (false)
+
+#define LOGOUT(seq) \
+do \
+{ \
+    std::stringstream buf; \
+    buf << seq; \
+    shared::logger_t::instance()->logout(buf.str()); \
+} while (false)
+
+#define LOGLINE(seq) \
+do  \
+{ \
+    std::stringstream buf; \
+    buf << seq << std::endl; \
+    shared::logger_t::instance()->logout(buf.str()); \
+} while (false)
     
-// log out class
+    // log out class
 class logger_t
 {
 protected:
     logger_t();
     ~logger_t();
-    
+
+    // do not allow copy and move global singleton logger object
+
+    logger_t(const logger_t& rhs) = delete;
+    logger_t(logger_t&& rhs) = delete;
+
+    logger_t& operator = (const logger_t& rhs) = delete;
+    logger_t& operator = (logger_t&& rhs) = delete;
+
 public:
     // open logfile by name
     bool open(const std::string& filename);
@@ -41,9 +74,12 @@ public:
     
     // log out like a printf format
     void logout(const char* format, ...);
-    // log out like C++ stream w/o doubling to stdout
-    std::ostream& logout();
- 
+    // log out
+    void logout(const std::string& log)
+    {
+        logout(log.c_str());
+    }
+
 private:
     // find log file
     std::string findfile(const std::string& filename) const;

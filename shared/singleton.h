@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <memory>
 
 namespace csnet
@@ -45,6 +46,36 @@ protected:
     
 protected:
     static std::unique_ptr<T, deleter> _instance;
+};
+
+template <class T>
+class singleton_holder
+{
+public:
+    // is object created?
+    static bool created()
+    {
+        return _instance;
+    }
+
+    // create singleton object
+    template<typename... Args>
+    static void create(Args&&... args)
+    {
+        _instance.reset(new T(std::forward<Args>(args)...));
+        //_instance = std::make_unique<T>(std::forward<Args>(args)...);
+    }
+
+    // singleton object pointer
+    static T& instance()
+    {
+        if (!_instance)
+            throw std::runtime_error("Object is not created");
+        return *_instance.get();
+    }
+
+private:
+    static std::unique_ptr<T> _instance;
 };
 
 }

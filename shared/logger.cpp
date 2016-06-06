@@ -1,7 +1,9 @@
 #ifdef _WIN32
+#include <windows.h>
 #else
 #include <unistd.h>
 #include <libgen.h>
+#include <sys/time.h>
 #endif
 
 #include <cstdio>
@@ -9,9 +11,10 @@
 #include <thread>
 #include <chrono>
 #include <ctime>
-#include <sstream>
 #include <limits.h>
 #include <cstdlib>
+#include <array>
+#include <iomanip>
 
 #include "logger.h"
 
@@ -112,14 +115,6 @@ void logger_t::logout(const char* format, ...)
     }
 }
 
-// log out like C++ stream w/o doubling to stdout
-
-std::ostream& logger_t::logout()
-{
-    _file << cur_time() << ", thread id: " << thread_id() << ". ";
-    return _file;
-}
-
 // return current system time
 std::string logger_t::thread_id() const
 {
@@ -131,18 +126,31 @@ std::string logger_t::thread_id() const
 // return current thread id
 std::string logger_t::cur_time() const
 {
+    int msec;
+
+#ifdef _WIN32
+    SYSTEMTIME systime;
+    ::GetLocalTime(&systime);
+    msec = systime.wMilliseconds;
+#else
+    timeval tv;
+    gettimeofday(&tv, 0);
+    msec = tv.tv_usec * 100;
+#endif
+
     std::chrono::system_clock::time_point today = std::chrono::system_clock::now();
     std::time_t now = std::chrono::system_clock::to_time_t(today);
     
     tm* timeinfo;
     timeinfo = localtime(&now);
     
-    std::string time;
-    time.resize(80);
-    size_t size = strftime(&time.front(), time.size(), "%Y-%m-%d %X", timeinfo); 
-    time.resize(size);
+    std::stringstream buf;
+
+    std::array<char, 80> time;
+    size_t size = strftime(time.data(), time.size(), "%Y-%m-%d %X", timeinfo);
+    buf << time.data() << "." << std::setfill('0') << std::setw(3) << msec;
     
-    return time;
+    return buf.str();
 }
 
 }

@@ -26,7 +26,7 @@ daemon_t::daemon_t(int argc, char** args) : _argc(argc), _args(args)
 
 daemon_t::~daemon_t()
 {
-    logger_t::instance()->logout("Server finished.\n");
+    LOGLINE("Server finished.");
 }
 
 int daemon_t::run()
@@ -37,12 +37,11 @@ int daemon_t::run()
         return -1;
     
     logger_t::instance()->open(mysettings_t::instance()->logfile());
+
     if (mysettings_t::instance()->daemon())
-        logger_t::instance()->logout("Server started as deamon application.\n");
-        //logger_t::instance()->logout() << "Server started as deamon application." << std::endl;
+        LOGLINE("Server started as deamon application.");
     else
-        logger_t::instance()->logout("Server started as console application.\n");
-        //logger_t::instance()->logout() << "Server started as console application." << std::endl;
+        LOGLINE("Server started as console application.");
     
     return process();
 }

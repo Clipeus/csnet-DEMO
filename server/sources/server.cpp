@@ -92,8 +92,8 @@ void server_t::init_signal()
 // signals handler
 void server_t::onsignal(const signal_t<server_t>* sender, int signal)
 {
-    logger_t::instance()->logout("Signal occurred: %s (%u).\n", sender->signame(signal).c_str(), signal);
-    
+    LOGLINE("Signal occurred: " << sender->signame(signal).c_str() << " (" << signal << ").");
+
 #ifdef _WIN32
     if (signal == SIGINT || signal == SIGTERM)
 #else
@@ -134,8 +134,8 @@ int server_t::run()
         // main server loop
         while (!is_finished())
         {
-            logger_t::instance()->logout("Waitnig for connection.\n");
-            
+            LOGLINE("Waitnig for connection.");
+
             // wait socket data to read
 #ifdef _WIN32
             int ret = _listener.read_ready(-1, 0, _cancel);
@@ -146,7 +146,7 @@ int server_t::run()
             {
                 if (is_finished())
                 {
-                    logger_t::instance()->logout("Leave the server loop.\n");
+                    LOGLINE("Leave the server loop.");
                     break;
                 }
                 else
@@ -158,7 +158,7 @@ int server_t::run()
             }
             else if (ret)
             {
-                logger_t::instance()->logout("Accepting socket.\n");
+                LOGLINE("Accepting socket.");
                 packet_socket_t accepted;
                 if (!_listener.accept(accepted))
                 {
@@ -169,25 +169,25 @@ int server_t::run()
 
                 socket_t::SOCKET_HANDLE hsocket = accepted.detach();
                 
-                logger_t::instance()->logout("Add job to pool.\n");
+                LOGLINE("Add job to pool.");
                 pool.enqueue([this, hsocket] // handle net request
                 {
                     packet_socket_t socket(hsocket);
                     // thread code
-                    logger_t::instance()->logout("Recieving socket data.\n");
+                    LOGLINE("Recieving socket data.");
                     
                     // read packet
                     std::unique_ptr<packet_info_t> packet(socket.receive());
                     if (packet == nullptr)
                     {
-                        logger_t::instance()->logout(socket.error_msg().empty() ? "There is no any data recieved.\n" : "%s\n", socket.error_msg().c_str());
+                        LOGLINE((socket.error_msg().empty() ? "There is no any data recieved." : socket.error_msg()));
                     }
                     else if (packet->kind == packet_kind::P_BASE_KIND && packet->type == packet_type::P_TEXT_TYPE && packet->action == packet_code::P_ECHO_ACTION)
                     {
                         // it is echo server action
-                        logger_t::instance()->logout("Demo echo server action\n");
+                        LOGLINE("Demo echo server action.");
                         packet_text_t* packet_text = static_cast<packet_text_t*>(packet.get());
-                        logger_t::instance()->logout("Recieved text: %s.\n", packet_text->text);
+                        LOGLINE("Recieved text: " << packet_text->text << ".");
 
                         //std::this_thread::sleep_for(std::chrono::seconds(3));
                         
@@ -195,16 +195,16 @@ int server_t::run()
                         std::transform(packet_text->text, packet_text->text + std::strlen(packet_text->text), packet_text->text, ::toupper);                            
                         packet_text->action |= packet_code::P_RETURN_ACTION;
                         
-                        logger_t::instance()->logout("Send text: %s.\n", packet_text->text);
+                        LOGLINE("Send text: " << packet_text->text << ".");
                         
                         // replay string to client
                         if (!socket.send(packet_text))
-                            logger_t::instance()->logout("Sending fialed: %s.\n", socket.error_msg().c_str());
+                            LOGLINE("Sending fialed: " << socket.error_msg() << ".");
                     }
                     else if (packet->kind == packet_kind::P_BASE_KIND && packet->type == packet_type::P_DATA_TYPE && packet->action == packet_code::P_TIME_ACTION)
                     {
                         // it is gettime action
-                        logger_t::instance()->logout("Demo get time action\n");
+                        LOGLINE("Demo get time action.");
                         
                         //std::this_thread::sleep_for(std::chrono::seconds(3));
                         
@@ -212,37 +212,37 @@ int server_t::run()
                         std::chrono::system_clock::time_point today = std::chrono::system_clock::now();
                         std::time_t now = std::chrono::system_clock::to_time_t(today);
                         
-                        logger_t::instance()->logout("Send time.\n");
+                        LOGLINE("Send time.");
                         
                         // replay time to client
                         if (!socket.send(packet_info_t(packet->kind, packet->type, packet->action | packet_code::P_RETURN_ACTION), (int8_t*)&now, sizeof(now)))
-                            logger_t::instance()->logout("Sending fialed: %s.\n", socket.error_msg().c_str());
+                            LOGLINE("Sending fialed: " << socket.error_msg() << ".");
                     }
                     else if (packet->kind == packet_kind::P_BASE_KIND && packet->type == packet_type::P_TEXT_TYPE && packet->action == packet_code::P_EXECMD_ACTION)
                     {
                         // it is execute cmd action
-                        logger_t::instance()->logout("Demo execute command\n");
+                        LOGLINE("Demo execute command.");
                         packet_text_t* packet_text = static_cast<packet_text_t*>(packet.get());
-                        logger_t::instance()->logout("Recieved command data: %s.\n", packet_text->text);
+                        LOGLINE("Recieved command data: " << packet_text->text << ".");
 
                         //std::this_thread::sleep_for(std::chrono::seconds(3));
                         
                         // execute command and get command's result
                         std::string result = exec(packet_text->text);
                         
-                        logger_t::instance()->logout("Send command result %s.\n", result.c_str());
+                        LOGLINE("Send command resul: " << result << ".");
                         
                         // replay command's result to client
                         if (!socket.send(packet_info_t(packet->kind, packet->type, packet->action | packet_code::P_RETURN_ACTION), result))
-                            logger_t::instance()->logout("Sending fialed: %s.\n", socket.error_msg().c_str());
+                            LOGLINE("Sending fialed: " << socket.error_msg() << ".");
                     }
                     else
                     {
                         // it is unknown action
-                        logger_t::instance()->logout("Recieved unknown packet.\n");
+                        LOGLINE("Recieved unknown packet.");
                         
                         if (socket.send(packet_info_t(packet->kind, packet_type::P_ERROR_TYPE, packet->action | packet_code::P_RETURN_ACTION), "Unknown packet"))
-                            logger_t::instance()->logout("Sending fialed: %s.\n", socket.error_msg().c_str());
+                            LOGLINE("Sending fialed: " << socket.error_msg() << ".");
                     }
                 });
             }
@@ -256,16 +256,12 @@ int server_t::run()
     }
     catch (std::exception& e)
     {
-        std::stringstream buf;
-        buf << "Error occurred: " << e.what() << std::endl;
-        logger_t::instance()->logout(buf.str().c_str());
+        LOGLINE("Error occurred: " << e.what());
         status = -1;
     }
     catch (...)
     {
-        std::stringstream buf;
-        buf << "Error occurred: " << "unexception error." << std::endl;
-        logger_t::instance()->logout(buf.str().c_str());
+        LOGLINE("Error occurred: " << "unexception error.");
         status = -2;
     }
 
@@ -275,7 +271,7 @@ int server_t::run()
 // true if need to exit
 bool server_t::is_finished()
 {
-    logger_t::instance()->logout("is_finished: %d.\n", _finished);
+    LOGLINE("is_finished: " << _finished << ".");
     return _finished;
 }
 
