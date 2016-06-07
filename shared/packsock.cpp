@@ -56,7 +56,7 @@ bool packet_socket_t::send(const packet_info_t& packet, const std::string& text)
     return send(packet_text);
 }
 
-bool packet_socket_t::send(const packet_info_t& packet, const int8_t* data, size_t data_size) const
+bool packet_socket_t::send(const packet_info_t& packet, const void* data, size_t data_size) const
 {
     size_t size = sizeof(packet_info_t) + data_size;
     std::vector<int8_t> d(size);

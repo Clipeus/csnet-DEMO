@@ -10,10 +10,10 @@
 #include <memory>
 #include <iomanip>
 #include <functional>
+#include <ctime>
 
 #include "mysettings.h"
-#include "socket.h"
-#include "packsock.h"
+#include "clnapi.h"
 
 using namespace csnet;
 using namespace csnet::shared;
@@ -21,6 +21,7 @@ using namespace csnet::shared;
 static std::mutex _mtx; // locker for std::cout
 
 // init socket object
+/*
 packet_socket_t get_socket()
 {
     std::stringstream buf;
@@ -32,7 +33,7 @@ packet_socket_t get_socket()
         throw std::runtime_error(buf.str());
     }
 
-    if (!socket.connect(mysettings_t::instance()->host().c_str(), mysettings_t::instance()->port()))
+    if (!socket.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port()))
     {
         buf << "Error occurred: " <<  socket.error_msg();
         throw std::runtime_error(buf.str());
@@ -40,43 +41,27 @@ packet_socket_t get_socket()
     
     return socket;
 }
+*/
+
+std::string time2str(std::time_t time)
+{
+    tm* timeinfo = std::localtime(&time);
+    std::string stime;
+    stime.resize(80);
+    size_t size = strftime(&stime.front(), stime.size(), "%Y-%m-%d %X", timeinfo);
+    stime.resize(size);
+    return stime;
+}
 
 // send request to server and get current time from server
 std::string gettime()
 {
     try
     {
-        packet_socket_t socket = get_socket();
-        
-        // send request to server
-        if (socket.send(packet_info_t(packet_kind::P_BASE_KIND, packet_type::P_DATA_TYPE, packet_code::P_TIME_ACTION)))
-        {
-            // receive response from server
-            std::unique_ptr<packet_data_t> packet(socket.receive_data());
-            if (packet && packet->kind == packet_kind::P_BASE_KIND && packet->type == packet_type::P_DATA_TYPE && packet->action == (packet_code::P_TIME_ACTION | packet_code::P_RETURN_ACTION))
-            {
-                tm* timeinfo;
-                timeinfo = localtime((std::time_t*)&packet->data);
-                
-                std::string time;
-                time.resize(80);
-                size_t size = strftime(&time.front(), time.size(), "%Y-%m-%d %X", timeinfo); 
-                time.resize(size);
-                return time;
-            }
-            else if (packet)
-            {
-                return "Unknown packet";
-            }
-            else
-            {
-                return socket.error_msg().size() ? socket.error_msg() : "error receiving packet";
-            }
-        }
-        else
-        {
-            return socket.error_msg();
-        }
+        clnapi_t clnapi;
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        std::time_t time = clnapi.gettime();
+        return time2str(time);
     }
     catch (std::exception& e)
     {
@@ -91,22 +76,9 @@ std::string echo(const std::string& text)
 {
     try
     {
-        packet_socket_t socket = get_socket();
-        
-        // send request to server
-        if (socket.send(packet_info_t(packet_kind::P_BASE_KIND, packet_type::P_TEXT_TYPE, packet_code::P_ECHO_ACTION), text))
-        {
-            // receive response from server
-            std::unique_ptr<packet_text_t> packet(socket.receive_text());
-            if (packet)
-                return packet->text;
-            else
-                return socket.error_msg().size() ? socket.error_msg() : "error receiving packet";
-        }
-        else
-        {
-            return socket.error_msg();
-        }
+        clnapi_t clnapi;
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        return clnapi.sendmsg(text);
     }
     catch (std::exception& e)
     {
@@ -121,22 +93,9 @@ std::string execmd(const std::string& cmd)
 {
     try
     {
-        packet_socket_t socket = get_socket();
-        
-        // send request to server
-        if (socket.send(packet_info_t(packet_kind::P_BASE_KIND, packet_type::P_TEXT_TYPE, packet_code::P_EXECMD_ACTION), cmd))
-        {
-            // receive response from server
-            std::unique_ptr<packet_text_t> packet(socket.receive_text());
-            if (packet)
-                return packet->text;
-            else
-                return socket.error_msg().size() ? socket.error_msg() : "error receiving packet";
-        }
-        else
-        {
-            return socket.error_msg();
-        }
+        clnapi_t clnapi;
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        return clnapi.execmd(cmd);
     }
     catch (std::exception& e)
     {
@@ -155,7 +114,7 @@ void do_in_thread(int count, T func, Args&&... args)
     for (int i = 0; i < count; i++)
     {
         // pass function and its param(s) to a thread function
-        threads[i] = std::thread([=](typename std::decay<T>::type &&f, typename std::decay<Args>::type &&... args)
+        threads[i] = std::thread([=](typename std::decay<Args>::type &&... args)
         {
             // exceute function
             std::string r = func(std::forward<Args>(args)...);
@@ -164,7 +123,7 @@ void do_in_thread(int count, T func, Args&&... args)
             std::lock_guard<std::mutex> lck(_mtx);
             std::cout << "recieved: " << r << std::endl;
 
-        }, std::forward<T>(func), std::forward<Args>(args)...);
+        }, std::forward<Args>(args)...);
     }
 
     // wait thread(s)

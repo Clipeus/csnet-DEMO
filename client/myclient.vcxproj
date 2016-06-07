@@ -60,6 +60,7 @@
     <ClCompile Include="..\shared\cfgparser.cpp" />
     <ClCompile Include="..\shared\packsock.cpp" />
     <ClCompile Include="..\shared\socket.cpp" />
+    <ClCompile Include="sources\clnapi.cpp" />
     <ClCompile Include="sources\main.cpp" />
     <ClCompile Include="sources\mysettings.cpp" />
   </ItemGroup>
@@ -69,6 +70,7 @@
     <ClInclude Include="..\shared\settings.h" />
     <ClInclude Include="..\shared\singleton.h" />
     <ClInclude Include="..\shared\socket.h" />
+    <ClInclude Include="sources\clnapi.h" />
     <ClInclude Include="sources\mysettings.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

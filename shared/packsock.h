@@ -29,7 +29,8 @@ enum class packet_code : uint16_t
     P_RETURN_ACTION = 0x8000, // answered packet 
     P_ECHO_ACTION = 1, // echo server action
     P_TIME_ACTION = 2, // get time action
-    P_EXECMD_ACTION = 3 // execute command
+    P_EXECMD_ACTION = 3, // execute command
+    P_CREDENTIALS_ACTION = 4 // check credentials
 };
 
 //overloading operator + to use OR for enum class type
@@ -116,7 +117,7 @@ public:
     
     // send data packet to socket
     // union 'packet' and 'data' and send them
-    bool send(const packet_info_t& packet, const int8_t* data, size_t data_size) const;
+    bool send(const packet_info_t& packet, const void* data, size_t data_size) const;
     
     // send packet w/o data from socket
     bool send(const packet_info_t& packet) const
