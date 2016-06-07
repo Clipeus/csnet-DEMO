@@ -154,7 +154,7 @@ void do_in_thread(int count, T func, Args&&... args)
 
     for (int i = 0; i < count; i++)
     {
-        // pass function and its param(s) to thread function
+        // pass function and its param(s) to a thread function
         threads[i] = std::thread([=](Args&&... _args)
         {
             // exceute function
@@ -207,7 +207,7 @@ int main(int argc, char** args)
         {
             std::cout << std::endl << "cmd: ";
             std::string cmd;
-            getline(std::cin, cmd);
+            std::getline(std::cin, cmd);
             
             if (cmd == "q") // quit
             {
@@ -222,7 +222,7 @@ int main(int argc, char** args)
             {
                 std::cout << "current request threads count: " << threads << std::endl;
                 std::cout << std::endl << "threads: ";
-                getline(std::cin, cmd);
+                std::getline(std::cin, cmd);
                 threads = std::atoi(cmd.c_str());
                 if (threads <= 0)
                     threads = 1;
@@ -232,7 +232,7 @@ int main(int argc, char** args)
             else if (cmd == "1") // send text to echo server
             {
                 std::cout << std::endl << "text: ";
-                getline(std::cin, cmd);
+                std::getline(std::cin, cmd);
                 std::cout << "sending: " << cmd << std::endl;
                 do_in_thread(threads, std::function<std::string(const std::string&)>(echo), cmd);
             }
@@ -244,7 +244,7 @@ int main(int argc, char** args)
             else if (cmd == "3") // execute command on server
             {
                 std::cout << std::endl << "exec: ";
-                getline(std::cin, cmd);
+                std::getline(std::cin, cmd);
                 do_in_thread(threads, std::function<std::string(const std::string&)>(execmd), cmd);
             }
             else

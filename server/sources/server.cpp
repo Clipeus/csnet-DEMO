@@ -1,4 +1,6 @@
 #ifdef _WIN32
+#define popen  _popen
+#define pclose _pclose
 #else
 #include <unistd.h>
 #endif
@@ -279,18 +281,16 @@ bool server_t::is_finished()
 std::string server_t::exec(const std::string& cmd) 
 {
     std::string result = "";
-    
-#ifdef _WIN32
-    result = "Execute command is not implementet on Windows yet.";
-#else
-    std::array<char, 128 + 1> buffer;
-    FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) 
-        throw std::runtime_error("popen() failed!");
+    FILE* pipe = nullptr;
     
     try 
     {
-        while (!feof(pipe)) 
+        std::array<char, 128 + 1> buffer;
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe)
+            throw std::runtime_error("popen() failed!");
+
+        while (!feof(pipe))
         {
             if (fgets(buffer.data(), 128, pipe) != NULL)
             {
@@ -298,15 +298,25 @@ std::string server_t::exec(const std::string& cmd)
                 result += buffer.data();
             }
         }
-    } 
-    catch (...) 
-    {
+
         pclose(pipe);
-        throw;
+    }
+    catch (std::exception& e)
+    {
+        if (pipe)
+            pclose(pipe);
+
+        result = "Execute command failed: ";
+        result += e.what();
+    }
+    catch (...)
+    {
+        if (pipe)
+            pclose(pipe);
+
+        result = "Execute command failed: unexception error.";
     }
     
-    pclose(pipe);
-#endif
     return result;
 }
 
