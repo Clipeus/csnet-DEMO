@@ -12,6 +12,7 @@
 #include "server.h"
 #include "daemon.h"
 #include "mysettings.h"
+#include "myservice.h"
 
 namespace csnet
 {
@@ -85,8 +86,8 @@ bool daemon_t::parse_cmd()
 
 int daemon_t::process()
 {
-    server_t server;
-    return server.run();
+    myserver_t server(std::make_unique<myservice_t>());
+    return server.start(mysettings_t::instance()->port(), mysettings_t::instance()->pool_count());
 }
 
 }

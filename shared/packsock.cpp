@@ -34,8 +34,12 @@ packet_info_t* packet_socket_t::receive() const
     if (num != (size - sizeof(int16_t)) || data.size() != (size - sizeof(int16_t)))
         return nullptr;
     
-    data.insert(data.begin(), (int8_t*)&size, (int8_t*)&size + sizeof(int16_t));
-    packet_info_t* packet = reinterpret_cast<packet_info_t*>(new int8_t[data.size()]);
+    data.insert(data.begin(), reinterpret_cast<int8_t*>(&size), reinterpret_cast<int8_t*>(&size) + sizeof(int16_t));
+    //packet_info_t* packet = reinterpret_cast<packet_info_t*>(new int8_t[data.size()]);
+
+    int8_t* placement = new int8_t[data.size()];
+    packet_info_t* packet = new (placement) packet_info_t;
+
     std::memmove(packet, data.data(), data.size());
     
     return packet;

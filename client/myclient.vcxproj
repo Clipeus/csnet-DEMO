@@ -58,6 +58,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\cfgparser.cpp" />
+    <ClCompile Include="..\shared\csnet_api.cpp" />
     <ClCompile Include="..\shared\packsock.cpp" />
     <ClCompile Include="..\shared\socket.cpp" />
     <ClCompile Include="sources\clnapi.cpp" />
@@ -66,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\cfgparser.h" />
+    <ClInclude Include="..\shared\csnet_api.h" />
     <ClInclude Include="..\shared\packsock.h" />
     <ClInclude Include="..\shared\settings.h" />
     <ClInclude Include="..\shared\singleton.h" />

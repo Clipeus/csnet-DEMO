@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <queue>
@@ -13,7 +13,7 @@
 namespace csnet
 {
 
-// thread pool manager class
+// thread pool manager class based on Jakob Progsch, Václav Zeman
 class thread_pool_t
 {
 public:
@@ -30,12 +30,13 @@ public:
     
     // add new work item to the pool
     template<class F, class... Args>
-    decltype(auto) enqueue(F&& f, Args&&... args) //-> std::future<typename std::result_of<F(Args...)>::type>
+    decltype(auto) enqueue(F&& f, Args&&... args)
     {
-        using return_type = typename std::result_of<F(Args...)>::type;
+        using return_type = std::result_of_t<F(Args...)>;
 
-        auto task = std::make_shared<std::packaged_task<return_type()> >(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
-            
+        //auto task = std::make_shared<std::packaged_task<return_type()>>(std::function<return_type(Args...)>(std::forward<F>(f), std::forward<Args>(args)...));
+        auto task = std::make_shared< std::packaged_task<return_type()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+
         // promise object
         std::future<return_type> res = task->get_future();
         {
@@ -57,7 +58,7 @@ private:
     // need to keep track of threads so we can join them
     std::vector<std::thread> _workers;
     // the task queue
-    std::queue<std::function<void()> > _tasks;
+    std::queue<std::function<void()>> _tasks;
     // synchronization
     std::mutex _queue_mutex;
     std::condition_variable _condition;

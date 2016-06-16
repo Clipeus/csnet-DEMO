@@ -30,7 +30,8 @@ enum class packet_code : uint16_t
     P_ECHO_ACTION = 1, // echo server action
     P_TIME_ACTION = 2, // get time action
     P_EXECMD_ACTION = 3, // execute command
-    P_CREDENTIALS_ACTION = 4 // check credentials
+    P_CREDENTIALS_ACTION = 4, // check credentials
+    P_PING_ACTION = 5 // ping
 };
 
 //overloading operator + to use OR for enum class type
@@ -44,6 +45,7 @@ packet_code& operator |= (packet_code& lhs, const packet_code& rhs);
 // packet head
 struct packet_info_t
 {
+    packet_info_t() {}
     packet_info_t(packet_kind k, packet_type t, packet_code a) : kind (k), type(t), action(a) {}
     uint16_t size_data()
     {
@@ -72,6 +74,13 @@ struct packet_text_t : public packet_info_t
 struct packet_wtext_t : public packet_info_t
 {
     wchar_t text[0];
+};
+
+// packet with error data, P_ERROR_TYPE type
+struct packet_error_t : public packet_info_t
+{
+    uint32_t error_code;
+    char error_text[0];
 };
 
 #pragma pack(pop)
@@ -129,7 +138,7 @@ public:
     // send any type packet from socket
     bool send(const packet_info_t* packet) const
     {
-        return socket_t::send((int8_t*)packet, (size_t)packet->size) == packet->size;
+        return socket_t::send(reinterpret_cast<const int8_t*>(packet), (size_t)packet->size) == packet->size;
     }
 };
 

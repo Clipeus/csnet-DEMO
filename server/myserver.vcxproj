@@ -58,17 +58,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\cfgparser.cpp" />
+    <ClCompile Include="..\shared\csnet_api.cpp" />
     <ClCompile Include="..\shared\logger.cpp" />
     <ClCompile Include="..\shared\packsock.cpp" />
     <ClCompile Include="..\shared\socket.cpp" />
     <ClCompile Include="sources\daemon.cpp" />
     <ClCompile Include="sources\main.cpp" />
+    <ClCompile Include="sources\myservice.cpp" />
     <ClCompile Include="sources\mysettings.cpp" />
     <ClCompile Include="sources\server.cpp" />
+    <ClCompile Include="sources\srvapi.cpp" />
     <ClCompile Include="sources\threadpool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\shared\cfgparser.h" />
+    <ClInclude Include="..\shared\csnet_api.h" />
     <ClInclude Include="..\shared\logger.h" />
     <ClInclude Include="..\shared\packsock.h" />
     <ClInclude Include="..\shared\settings.h" />
@@ -76,8 +80,10 @@
     <ClInclude Include="..\shared\singleton.h" />
     <ClInclude Include="..\shared\socket.h" />
     <ClInclude Include="sources\daemon.h" />
+    <ClInclude Include="sources\myservice.h" />
     <ClInclude Include="sources\mysettings.h" />
     <ClInclude Include="sources\server.h" />
+    <ClInclude Include="sources\srvapi.h" />
     <ClInclude Include="sources\threadpool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

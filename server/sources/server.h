@@ -1,33 +1,37 @@
 #pragma once
 
 #include "signals.h"
-#include "socket.h"
+#include "srvapi.h"
 
 namespace csnet
 {
 
-class server_t
+// socket server class
+class myserver_t //: public shared::csnet_api_t
 {
 public:
-    server_t();
-    ~server_t();    
-    
-protected:
-    void init_socket();
-    void init_signal();
-    void close();
-    bool is_finished();
-    std::string exec(const std::string& cmd);
+    myserver_t(std::unique_ptr<service_i> handler);
+    virtual ~myserver_t();
 
 public:
-    int run();
-    void onsignal(const csnet::shared::signal_t<server_t>* sender, int signal);
-    
-protected:
-    shared::socket_t _listener;
-    bool _finished = false;
-    shared::signal_t<server_t> _signal;
+    // start server
+    int start(int port, int pool_count);
+    // stopt server
+    void stop();
+    // signal handler
+    void onsignal(const shared::signal_t<myserver_t>* sender, int signal);
 
+protected:
+    void init_socket(int port, int pool_count);
+    void init_signal();
+    // true if need to exit
+    bool is_finished();
+
+protected:
+    shared::packet_socket_t _socket;
+    std::unique_ptr<service_i> _handler;
+    shared::signal_t<myserver_t> _signal;
+    bool _finished = false;
 #ifdef _WIN32
     SOCKET _cancel = INVALID_SOCKET;
 #endif

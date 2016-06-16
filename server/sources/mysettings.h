@@ -57,13 +57,25 @@ public:
     {
         return _logfile;
     }
-    
+    // get user login
+    std::string login() const
+    {
+        return _login;
+    }
+    // get user password
+    std::string password() const
+    {
+        return _password;
+    }
+
 private:
     bool _daemon;
     int _port;
     int _pool_count;
     std::string _logfile;
     bool _log_disabled;
+    std::string _login;
+    std::string _password;
 };
 
 }

@@ -102,10 +102,10 @@ bool socket_t::attach(SOCKET_HANDLE socket)
     std::array<int8_t, 1024> addr;
     socklen_t len = sizeof(addr);
 
-    if (::getsockname(_socket, (sockaddr*)addr.data(), &len) < 0)
+    if (::getsockname(_socket, reinterpret_cast<sockaddr*>(addr.data()), &len) < 0)
         set_error(socket_errno());
     else
-        _family = ((sockaddr_in*)addr.data())->sin_family;
+        _family = reinterpret_cast<sockaddr_in*>(addr.data())->sin_family;
     
     return error() == 0;
 }

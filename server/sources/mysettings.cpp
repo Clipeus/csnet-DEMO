@@ -37,6 +37,9 @@ void mysettings_t::load()
     std::string val = get_value("connect", "port");
     _port = std::atoi(val.c_str());
     
+    _login = get_value("connect", "login");
+    _password = get_value("connect", "password");
+
     val = get_value("behavior", "pool_count");
     _pool_count = std::min(std::atoi(val.c_str()), 128);
 
@@ -63,6 +66,8 @@ void mysettings_t::reset()
     _port = 0;
     _pool_count = 5;
     _logfile.clear();
+    _login.clear();
+    _password.clear();
 }
 
 }

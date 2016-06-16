@@ -20,29 +20,6 @@ using namespace csnet::shared;
 
 static std::mutex _mtx; // locker for std::cout
 
-// init socket object
-/*
-packet_socket_t get_socket()
-{
-    std::stringstream buf;
-    packet_socket_t socket;
-
-    if (!socket.create())
-    {
-        buf << "Error occurred: " << socket.error_msg();
-        throw std::runtime_error(buf.str());
-    }
-
-    if (!socket.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port()))
-    {
-        buf << "Error occurred: " <<  socket.error_msg();
-        throw std::runtime_error(buf.str());
-    }
-    
-    return socket;
-}
-*/
-
 std::string time2str(std::time_t time)
 {
     tm* timeinfo = std::localtime(&time);
@@ -105,10 +82,50 @@ std::string execmd(const std::string& cmd)
     }
 }
 
+// ping
+std::string ping()
+{
+    try
+    {
+        clnapi_t clnapi;
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        uint64_t result = clnapi.ping(0x1010101010101010);
+
+        std::string ret = "Ping is ";
+        ret += (0x1010101010101010 == result) ? "OK" : "failed";
+        return ret;
+    }
+    catch (std::exception& e)
+    {
+        std::stringstream ret;
+        ret << "Error occurred: " << e.what() << std::endl;
+        return ret.str();
+    }
+}
+
+// send credentials to server to check them
+std::string check_credentials(const std::string& login, const std::string& password)
+{
+    try
+    {
+        clnapi_t clnapi;
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port(), login, password);
+        return "It is OK!";
+    }
+    catch (std::exception& e)
+    {
+        std::stringstream ret;
+        ret << "Error occurred: " << e.what() << std::endl;
+        return ret.str();
+    }
+}
+
 // send command to server and get command's result in a thread
 template <class T, typename... Args>
 void do_in_thread(int count, T func, Args&&... args)
 {
+    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
     std::vector<std::thread> threads(count);
 
     for (int i = 0; i < count; i++)
@@ -129,6 +146,10 @@ void do_in_thread(int count, T func, Args&&... args)
     // wait thread(s)
     for (int i = 0; i < count; i++)
         threads[i].join();
+
+    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+    std::cout << "Action taked time: " << time_span.count() << " seconds" << std::endl;;
 }
 
 // print help screen
@@ -138,6 +159,8 @@ void help()
     std::cout << "1 - send text to the server" << std::endl;
     std::cout << "2 - get time from the server" << std::endl;
     std::cout << "3 - execute command" << std::endl;
+    std::cout << "4 - ping" << std::endl;
+    std::cout << "5 - check credentials" << std::endl;
     std::cout << "t - set request threads count (default 1)" << std::endl;
     std::cout << "h - help screen" << std::endl;
     std::cout << "q - quit" << std::endl;
@@ -192,7 +215,6 @@ int main(int argc, char** args)
             {
                 std::cout << std::endl << "text: ";
                 std::getline(std::cin, cmd);
-                //std::cout << "sending: " << cmd << std::endl;
                 do_in_thread(threads, std::function<std::string(const std::string&)>(echo), cmd);
             }
             else if (cmd == "2") // get time from server
@@ -205,6 +227,22 @@ int main(int argc, char** args)
                 std::cout << std::endl << "exec: ";
                 std::getline(std::cin, cmd);
                 do_in_thread(threads, std::function<std::string(const std::string&)>(execmd), cmd);
+            }
+            else if (cmd == "4") // ping
+            {
+                do_in_thread(threads, std::function<std::string()>(ping));
+            }
+            else if (cmd == "5") // check credentials
+            {
+                std::string login;
+                std::cout << std::endl << "login: ";
+                std::getline(std::cin, login);
+
+                std::string password;
+                std::cout << std::endl << "password: ";
+                std::getline(std::cin, password);
+
+                do_in_thread(threads, std::function<std::string(const std::string&, const std::string&)>(check_credentials), login, password);
             }
             else
             {
