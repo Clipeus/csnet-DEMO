@@ -1,5 +1,5 @@
 #include <cstring>
-#include <cstdlib>
+#include <algorithm>
 
 #include "csnet_api.h"
 
@@ -176,7 +176,11 @@ uint64_t client_api_t::ping(uint64_t data) const
     receive_reply_data(packet_code::P_PING_ACTION, ret);
 
     uint64_t result;
+#ifdef _MSC_VER
+    std::memcpy(&result, ret.data(), min(sizeof(uint64_t), ret.size()));
+#else
     std::memcpy(&result, ret.data(), std::min(sizeof(uint64_t), ret.size()));
+#endif
     return result;
 }
 
