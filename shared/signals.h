@@ -6,6 +6,7 @@
 #endif
 
 #include <csignal>
+#include <string>
 #include <cstring>
 #include <utility>
 #include <set>

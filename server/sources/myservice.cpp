@@ -47,7 +47,7 @@ std::string myservice_t::sendmsg(const std::string& msg) const
 
     std::string result(msg.size(), 0);
     // set string to upper
-    std::transform(msg.cbegin(), msg.cend(), result.begin(), std::toupper);
+    std::transform(msg.cbegin(), msg.cend(), result.begin(), toupper);
 
     LOGLINE("Echo: " << result << ".");
     return result;

@@ -1,3 +1,6 @@
+#include <cstring>
+#include <cstdlib>
+
 #include "csnet_api.h"
 
 namespace csnet
@@ -173,7 +176,7 @@ uint64_t client_api_t::ping(uint64_t data) const
     receive_reply_data(packet_code::P_PING_ACTION, ret);
 
     uint64_t result;
-    std::memcpy(&result, ret.data(), min(sizeof(uint64_t), ret.size()));
+    std::memcpy(&result, ret.data(), std::min(sizeof(uint64_t), ret.size()));
     return result;
 }
 
