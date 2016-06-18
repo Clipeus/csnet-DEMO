@@ -90,6 +90,7 @@ void socket_t::close()
         ::closesocket(_socket);
         _socket = INVALID_SOCKET_HANDLE;
     }
+    set_error(0);
 }
 
 // close the handle and attach new socket handle

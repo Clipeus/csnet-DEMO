@@ -6,8 +6,8 @@
 
 #include "csnet_api.h"
 
-#ifndef WSAECONNREFUSED
-#define WSAECONNREFUSED ECONNREFUSED
+#ifndef WSAETIMEDOUT
+#define WSAETIMEDOUT ETIMEDOUT
 #endif
 
 namespace csnet
@@ -148,31 +148,25 @@ client_api_t::~client_api_t()
 // connect to server w/o credentials
 void client_api_t::connect(const std::string& host, int port, int connect_attempts, int next_attempt)
 {
-    //close();
-
-    //// init socket object
-
-    //if (!_socket.create())
-    //    throw csnet_api_error(_socket.error_msg());
-
     // try to connect
     int res = 0;
-    for (int i = 0; i < connect_attempts; i++)
+    int i = 0;
+    for (; i < connect_attempts; i++)
     {
+        // need to recreate before new connect
         close();
 
         // init socket object
-
         if (!_socket.create())
             throw csnet_api_error(_socket.error_msg());
-
         res = _socket.connect(host, port);
         if (res)
             break; // connected
-        else if (WSAECONNREFUSED != _socket.error()) // checking for "No connection could be made because the target machine actively refused it"
+        else if (WSAETIMEDOUT == _socket.error()) // checking for timeout
             throw csnet_api_error(_socket.error_msg()); 
 
-        // server is busy, waiting for next connection
+        // skip any connect error and try again
+        //waiting for next connection
         std::this_thread::sleep_for(std::chrono::milliseconds(next_attempt));
     }
     
