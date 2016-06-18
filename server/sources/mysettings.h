@@ -12,8 +12,8 @@ class mysettings_t : public shared::settings_t, public shared::singleton<mysetti
     friend struct deleter;
     template<class U> friend class shared::singleton;
     static constexpr int _THREADS_ON_CORE = 2;
+    static const int _MIN_THREAD_POOL;
     static constexpr int _MAX_THREAD_POOL = 1024;
-    static int _MIN_THREAD_POOL;
 
 protected:
     mysettings_t(csnet::shared::settings_provider_t* provider);
