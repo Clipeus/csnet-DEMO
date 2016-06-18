@@ -6,6 +6,10 @@
 
 #include "csnet_api.h"
 
+#ifndef WSAECONNREFUSED
+#define WSAECONNREFUSED ECONNREFUSED
+#endif
+
 namespace csnet
 {
 namespace shared
