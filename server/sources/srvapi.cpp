@@ -43,5 +43,4 @@ void srvapi_t::send_reply(packet_code action, uint32_t error, const std::string&
     send(action | packet_code::P_RETURN_ACTION, error, text);
 }
 
-
 }

@@ -83,4 +83,3 @@ bool packet_socket_t::send(const packet_info_t& packet, const void* data, size_t
 
 }
 }
-        
