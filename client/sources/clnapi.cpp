@@ -1,3 +1,5 @@
+#include "cstring"
+
 #include "clnapi.h"
 
 namespace csnet

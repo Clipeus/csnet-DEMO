@@ -3,6 +3,8 @@
 #define socket_errno() WSAGetLastError()
 #undef min
 #undef max
+#else
+#include <sys/socket.h>
 #endif
 
 #include <cstdlib>
