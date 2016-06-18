@@ -100,7 +100,7 @@ void mysettings_t::check_values()
         _pool_count = _MIN_THREAD_POOL;
 
     if (_queue_count == 0)
-        _pool_count = _MIN_THREAD_POOL;
+        _queue_count = _MIN_THREAD_POOL;
 }
 
 }
