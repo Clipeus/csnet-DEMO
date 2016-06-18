@@ -23,7 +23,7 @@ using namespace shared;
 // static instance
 template <> std::unique_ptr<mysettings_t, singleton<mysettings_t>::deleter> singleton<mysettings_t>::_instance = nullptr;
 
-int mysettings_t::_MIN_THREAD_POOL = std::thread::hardware_concurrency();
+int mysettings_t::_MIN_THREAD_POOL = std::max<int>(std::thread::hardware_concurrency() * _THREADS_ON_CORE, _THREADS_ON_CORE);
 
 mysettings_t::mysettings_t(csnet::shared::settings_provider_t* provider) : settings_t(provider)
 {
@@ -89,7 +89,7 @@ void mysettings_t::reset()
 
 void mysettings_t::check_values()
 {
-    if (_pool_count > _MIN_THREAD_POOL)
+    if (_pool_count > _MAX_THREAD_POOL)
         _pool_count = _MAX_THREAD_POOL;
 
     if (_queue_count > _MAX_THREAD_POOL)
