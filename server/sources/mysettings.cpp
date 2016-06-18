@@ -53,9 +53,9 @@ void mysettings_t::load()
     _password = get_value("connect", "password");
 
     val = get_value("behavior", "pool_count");
-    _pool_count = std::min(std::atoi(val.c_str()), _MAX_THREAD_POOL);
+    _pool_count = std::atoi(val.c_str());
     val = get_value("behavior", "queue_count");
-    _queue_count = std::min(std::atoi(val.c_str()), SOMAXCONN);
+    _queue_count = std::atoi(val.c_str());
 
     _logfile = get_value("debug", "logfile");
 
@@ -89,8 +89,15 @@ void mysettings_t::reset()
 
 void mysettings_t::check_values()
 {
+    if (_pool_count > _MIN_THREAD_POOL)
+        _pool_count = _MAX_THREAD_POOL;
+
+    if (_queue_count > _MAX_THREAD_POOL)
+        _queue_count = _MAX_THREAD_POOL;
+
     if (_pool_count == 0)
         _pool_count = _MIN_THREAD_POOL;
+
     if (_queue_count == 0)
         _pool_count = _MIN_THREAD_POOL;
 }
