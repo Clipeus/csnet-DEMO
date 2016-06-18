@@ -44,4 +44,27 @@ std::string clnapi_t::execmd(const std::string& cmd) const
     return receive_reply_text(packet_code::P_EXECMD_ACTION);
 }
 
+// send credentials to server to check them
+void clnapi_t::check_credentials(const std::string& login, const std::string& password) const
+{
+    // allocate memory for credentials_info_t
+    size_t size = sizeof(credentials_info_t) + login.size() + password.size();
+    std::vector<int8_t> data(size);
+
+    credentials_info_t* ci = reinterpret_cast<credentials_info_t*>(data.data());
+
+    // copy login
+    ci->login_len = login.size();
+    std::memmove(ci->data, login.c_str(), login.size());
+
+    // copy password
+    ci->password_len = password.size();
+    std::memmove(ci->data + login.size(), password.c_str(), password.size());
+
+    // send request to server
+    send(packet_code::P_CREDENTIALS_ACTION, ci, size);
+    // receive response from server
+    receive_reply(packet_code::P_CREDENTIALS_ACTION); // OK, if there is not any exceptions
+}
+
 }

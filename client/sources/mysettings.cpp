@@ -39,6 +39,13 @@ void mysettings_t::load()
     
     _login = get_value("connect", "login");
     _password = get_value("connect", "password");
+
+    val = get_value("connect", "connect_attempts");
+    _connect_attempts = std::atoi(val.c_str());
+    val = get_value("connect", "next_attempt");
+    _next_attempt = std::atoi(val.c_str());
+
+    check_values();
 }
 
 // save settings
@@ -53,6 +60,14 @@ void mysettings_t::reset()
     _host.clear();
     _login.clear();
     _password.clear();
+    _connect_attempts = _CONNECT_ATTEMPT;
+    _next_attempt = _WAIT_NEXT_CONNECT_ATTEMPT;
+}
+
+void mysettings_t::check_values()
+{
+    if (_connect_attempts == 0)
+        _connect_attempts = _CONNECT_ATTEMPT;
 }
 
 }

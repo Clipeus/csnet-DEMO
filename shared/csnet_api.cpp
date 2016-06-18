@@ -1,5 +1,8 @@
 #include <cstring>
+#include <cstdlib>
 #include <algorithm>
+#include <thread>
+#include <chrono>  
 
 #include "csnet_api.h"
 
@@ -139,24 +142,40 @@ client_api_t::~client_api_t()
 }
 
 // connect to server w/o credentials
-void client_api_t::connect(const std::string& host, int port)
+void client_api_t::connect(const std::string& host, int port, int connect_attempts, int next_attempt)
 {
-    close();
+    //close();
 
-    // init socket object
+    //// init socket object
 
-    if (!_socket.create())
+    //if (!_socket.create())
+    //    throw csnet_api_error(_socket.error_msg());
+
+    // try to connect
+    int res = 0;
+    for (int i = 0; i < connect_attempts; i++)
+    {
+        close();
+
+        // init socket object
+
+        if (!_socket.create())
+            throw csnet_api_error(_socket.error_msg());
+
+        res = _socket.connect(host, port);
+        if (res)
+            break; // connected
+        else if (WSAECONNREFUSED != _socket.error()) // checking for "No connection could be made because the target machine actively refused it"
+            throw csnet_api_error(_socket.error_msg()); 
+
+        // server is busy, waiting for next connection
+        std::this_thread::sleep_for(std::chrono::milliseconds(next_attempt));
+    }
+    
+    if (!res) // attempts have been exhausted
         throw csnet_api_error(_socket.error_msg());
 
-    if (!_socket.connect(host, port))
-        throw csnet_api_error(_socket.error_msg());
-}
-
-// connect to server with credentials
-void client_api_t::connect(const std::string& host, int port, const std::string& login, const std::string& password)
-{
-    connect(host, port);
-    check_credentials(login, password);
+    // it is OK!
 }
 
 // close connection
@@ -176,11 +195,7 @@ uint64_t client_api_t::ping(uint64_t data) const
     receive_reply_data(packet_code::P_PING_ACTION, ret);
 
     uint64_t result;
-#ifdef _MSC_VER
-    std::memcpy(&result, ret.data(), min(sizeof(uint64_t), ret.size()));
-#else
     std::memcpy(&result, ret.data(), std::min(sizeof(uint64_t), ret.size()));
-#endif
     return result;
 }
 
@@ -200,29 +215,6 @@ std::string client_api_t::receive_reply_text(packet_code action) const
 void client_api_t::receive_reply_data(packet_code action, std::vector<int8_t>& data) const
 {
     receive_data(action | packet_code::P_RETURN_ACTION, data);
-}
-
-// send credentials to server to check them
-void client_api_t::check_credentials(const std::string& login, const std::string& password) const
-{
-    // allocate memory for credentials_info_t
-    size_t size = sizeof(credentials_info_t) + login.size() + password.size();
-    std::vector<int8_t> data(size);
-    
-    credentials_info_t* ci = reinterpret_cast<credentials_info_t*>(data.data());
-
-    // copy login
-    ci->login_len = login.size();
-    std::memmove(ci->data, login.c_str(), login.size());
-
-    // copy password
-    ci->password_len = password.size();
-    std::memmove(ci->data + login.size(), password.c_str(), password.size());
-
-    // send request to server
-    send(packet_code::P_CREDENTIALS_ACTION, ci, size);
-    // receive response from server
-    receive_reply(packet_code::P_CREDENTIALS_ACTION); // OK, if there is not any exceptions
 }
 
 }

@@ -93,23 +93,22 @@ protected:
 // client net api wrapper
 class client_api_t : public csnet_api_t
 {
+    static constexpr int _CONNECT_ATTEMPT = 5; // what is count attempt to connect if server is busy?
+    static constexpr int _WAIT_NEXT_CONNECT_ATTEMPT = 100; // time in ms to wait next attempt
+
 public:
     client_api_t(packet_kind kind = packet_kind::P_BASE_KIND);
     virtual ~client_api_t();
 
 public:
     // connect to server w/o credentials
-    void connect(const std::string& host, int port);
-    // connect to server with credentials
-    void connect(const std::string& host, int port, const std::string& login, const std::string& password);
+    void connect(const std::string& host, int port, int connect_attempts = _CONNECT_ATTEMPT, int next_attempt = _WAIT_NEXT_CONNECT_ATTEMPT);
     // close connection
     void close();
     // check server connection
     uint64_t ping(uint64_t data) const;
 
 protected:
-    // send credentials to server to check them
-    virtual void check_credentials(const std::string& login, const std::string& password) const;
     // receive null reply from server
     virtual void receive_reply(packet_code action) const;
     // receive reply text from server

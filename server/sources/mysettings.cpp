@@ -1,6 +1,14 @@
+#ifdef _WIN32
+#include <Winsock2.h>
+#define socket_errno() WSAGetLastError()
+#undef min
+#undef max
+#endif
+
 #include <cstdlib>
 #include <sstream>
 #include <algorithm>
+#include <thread>
 
 #include "mysettings.h"
 #include "cfgparser.h"
@@ -12,6 +20,8 @@ using namespace shared;
 
 // static instance
 template <> std::unique_ptr<mysettings_t, singleton<mysettings_t>::deleter> singleton<mysettings_t>::_instance = nullptr;
+
+int mysettings_t::_MIN_THREAD_POOL = std::thread::hardware_concurrency();
 
 mysettings_t::mysettings_t(csnet::shared::settings_provider_t* provider) : settings_t(provider)
 {
@@ -41,12 +51,16 @@ void mysettings_t::load()
     _password = get_value("connect", "password");
 
     val = get_value("behavior", "pool_count");
-    _pool_count = std::min(std::atoi(val.c_str()), 128);
+    _pool_count = std::min(std::atoi(val.c_str()), _MAX_THREAD_POOL);
+    val = get_value("behavior", "queue_count");
+    _queue_count = std::min(std::atoi(val.c_str()), SOMAXCONN);
 
     _logfile = get_value("debug", "logfile");
 
     val = get_value("debug", "log_disabled");
     _log_disabled = to_bool(val);
+
+    check_values();
 }
 
 // save settings
@@ -64,10 +78,19 @@ void mysettings_t::reset()
 {
     _daemon = false;
     _port = 0;
-    _pool_count = 5;
+    _pool_count = _MIN_THREAD_POOL;
+    _queue_count = _MIN_THREAD_POOL;
     _logfile.clear();
     _login.clear();
     _password.clear();
+}
+
+void mysettings_t::check_values()
+{
+    if (_pool_count == 0)
+        _pool_count = _MIN_THREAD_POOL;
+    if (_queue_count == 0)
+        _pool_count = _MIN_THREAD_POOL;
 }
 
 }

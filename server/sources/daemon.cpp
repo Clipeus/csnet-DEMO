@@ -45,6 +45,10 @@ int daemon_t::run()
     else
         LOGLINE("Server started as console application.");
     
+    LOGLINE("Server port: " << mysettings_t::instance()->port() << ".");
+    LOGLINE("Server pool count: " << mysettings_t::instance()->pool_count() << ".");
+    LOGLINE("Server queue count: " << mysettings_t::instance()->queue_count() << ".");
+
     return process();
 }
 
@@ -87,7 +91,7 @@ bool daemon_t::parse_cmd()
 int daemon_t::process()
 {
     myserver_t server(std::make_unique<myservice_t>());
-    return server.start(mysettings_t::instance()->port(), mysettings_t::instance()->pool_count());
+    return server.start(mysettings_t::instance()->port(), mysettings_t::instance()->pool_count(), mysettings_t::instance()->queue_count());
 }
 
 }

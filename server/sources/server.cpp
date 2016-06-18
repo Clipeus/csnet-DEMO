@@ -31,7 +31,7 @@ myserver_t::~myserver_t()
 }
 
 // init server
-void myserver_t::init_socket(int port, int pool_count)
+void myserver_t::init_socket(int port, int queue_count)
 {
     if (!_socket.create())
         throw csnet_api_error(_socket.error_msg());
@@ -46,7 +46,7 @@ void myserver_t::init_socket(int port, int pool_count)
     if (!_socket.bind((sockaddr *)&addr, sizeof(addr)))
         throw csnet_api_error(_socket.error_msg());
 
-    _socket.listen(pool_count * 2);
+    _socket.listen(queue_count);
 }
 
 void myserver_t::init_signal()
@@ -96,12 +96,12 @@ void myserver_t::onsignal(const signal_t<myserver_t>* sender, int signal)
 }
 
 // start server
-int myserver_t::start(int port, int pool_count)
+int myserver_t::start(int port, int pool_count, int queue_count)
 {
     int status = 0;
     try
     {
-        init_socket(port, pool_count);
+        init_socket(port, queue_count);
         init_signal();
 
         // init thread pool by threads number
@@ -175,9 +175,8 @@ int myserver_t::start(int port, int pool_count)
                             // check login and password
                             if (!_handler->check_credentials(login, password))
                                 srvapi.send_reply(packet_data->action, (uint32_t)-1, "Invalid credentials");
-
-                            // replay OK to client
-                            srvapi.send_reply(packet_data->action);
+                            else
+                                srvapi.send_reply(packet_data->action); // replay OK to client
                         }
                         else if (srvapi.is_packet_of(packet_type::P_DATA_TYPE, packet_code::P_PING_ACTION))
                         {

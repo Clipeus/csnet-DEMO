@@ -2,6 +2,8 @@
 
 #ifdef _WIN32
 #include <winsock.h>
+#undef min
+#undef max
 #else
 #include <sys/types.h>
 #include <sys/socket.h>

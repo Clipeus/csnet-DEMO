@@ -23,6 +23,8 @@ public:
     std::time_t gettime() const;
     // send command to server and get command's result
     std::string execmd(const std::string& cmd) const;
+    // send credentials to server to check them
+    void check_credentials(const std::string& login, const std::string& password) const;
 };
 
 }

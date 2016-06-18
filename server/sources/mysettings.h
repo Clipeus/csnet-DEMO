@@ -11,7 +11,10 @@ class mysettings_t : public shared::settings_t, public shared::singleton<mysetti
 {
     friend struct deleter;
     template<class U> friend class shared::singleton;
-    
+    static constexpr int _THREADS_ON_CORE = 2;
+    static constexpr int _MAX_THREAD_POOL = 1024;
+    static int _MIN_THREAD_POOL;
+
 protected:
     mysettings_t(csnet::shared::settings_provider_t* provider);
     ~mysettings_t();
@@ -47,6 +50,11 @@ public:
     {
         return _pool_count;
     }
+    // get listen queue count
+    int queue_count() const
+    {
+        return _queue_count;
+    }
     // get is log disabled
     bool log_disabled() const
     {
@@ -68,10 +76,15 @@ public:
         return _password;
     }
 
+protected:
+    // check values and correct
+    virtual void check_values();
+
 private:
     bool _daemon;
     int _port;
     int _pool_count;
+    int _queue_count;
     std::string _logfile;
     bool _log_disabled;
     std::string _login;

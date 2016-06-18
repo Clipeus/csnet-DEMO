@@ -36,7 +36,8 @@ std::string gettime()
     try
     {
         clnapi_t clnapi;
-        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port(), 
+            mysettings_t::instance()->connect_attempts(), mysettings_t::instance()->next_attempt());
         std::time_t time = clnapi.gettime();
         return time2str(time);
     }
@@ -54,7 +55,8 @@ std::string echo(const std::string& text)
     try
     {
         clnapi_t clnapi;
-        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port(),
+            mysettings_t::instance()->connect_attempts(), mysettings_t::instance()->next_attempt());
         return clnapi.sendmsg(text);
     }
     catch (std::exception& e)
@@ -71,7 +73,8 @@ std::string execmd(const std::string& cmd)
     try
     {
         clnapi_t clnapi;
-        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port(),
+            mysettings_t::instance()->connect_attempts(), mysettings_t::instance()->next_attempt());
         return clnapi.execmd(cmd);
     }
     catch (std::exception& e)
@@ -88,7 +91,8 @@ std::string ping()
     try
     {
         clnapi_t clnapi;
-        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port());
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port(),
+            mysettings_t::instance()->connect_attempts(), mysettings_t::instance()->next_attempt());
         uint64_t result = clnapi.ping(0x1010101010101010);
 
         std::string ret = "Ping is ";
@@ -109,7 +113,10 @@ std::string check_credentials(const std::string& login, const std::string& passw
     try
     {
         clnapi_t clnapi;
-        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port(), login, password);
+        clnapi.connect(mysettings_t::instance()->host(), mysettings_t::instance()->port(),
+            mysettings_t::instance()->connect_attempts(), mysettings_t::instance()->next_attempt());
+
+        clnapi.check_credentials(login, password);
         return "It is OK!";
     }
     catch (std::exception& e)

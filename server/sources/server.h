@@ -15,14 +15,14 @@ public:
 
 public:
     // start server
-    int start(int port, int pool_count);
+    int start(int port, int pool_count, int queue_count);
     // stopt server
     void stop();
     // signal handler
     void onsignal(const shared::signal_t<myserver_t>* sender, int signal);
 
 protected:
-    void init_socket(int port, int pool_count);
+    void init_socket(int port, int queue_count);
     void init_signal();
     // true if need to exit
     bool is_finished();
