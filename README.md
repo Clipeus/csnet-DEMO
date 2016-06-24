@@ -1,7 +1,7 @@
 # csnet-DEMO
 There is demo of the client-server application for Linux in C++ (supports C++14).
 
-The goal of the project is to study C++ development and socket network programming for Linux with Windows supporting. The demo project describes network programming, cross platform programming (Linux and Windows) and classes model for them in C++14.
+The goal of the project is to describe C++ development and socket network programming for Linux with Windows supporting. The demo project describes network programming, cross platform programming (Linux and Windows) and classes model for them in C++14.
 
 There are two console application: a client and a server.
 The client sends a request to the server and outputs a result of it.
