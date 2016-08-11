@@ -1,7 +1,8 @@
 #pragma once
 
 #ifdef _WIN32
-#include <winsock.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #undef min
 #undef max
 #else
@@ -117,7 +118,7 @@ public:
                 // read chunk of data
                 num = receive(buf_temp.data(), _buffsize, flags, addr, len);
                 if (num > 0)
-                    buf.insert(buf.cend(), buf_temp.cbegin(), buf_temp.cend());
+                    buf.insert(buf.cend(), buf_temp.cbegin(), buf_temp.cbegin() + num);
             }
             while (num > 0 && num == _buffsize);
             
@@ -249,8 +250,10 @@ protected:
 #else
     int is_ready(fd_set* rs, fd_set* ws = nullptr, fd_set* es = nullptr, timeval* tv = nullptr, const sigset_t* sigmask = nullptr) const;
 #endif
-    // get ip address by host name
-    hostent* gethostbyname(const std::string& name) const;
+    // get address info by name
+    addrinfo* getaddrinfo(const std::string& node, const std::string& service) const;
+    // get address info by name
+    addrinfo* getaddrinfo(const std::string& node, int port) const;
     // move socket from other and than detach it
     void move(socket_t& socket);
     // set last error socket

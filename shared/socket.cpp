@@ -1,6 +1,6 @@
 
 #ifdef _WIN32
-#include <WS2tcpip.h>
+//#include <WS2tcpip.h>
 #define socket_errno() WSAGetLastError()
 #else
 #include <netinet/in.h>
@@ -13,6 +13,7 @@
 #include <cstring>
 #include <sstream>
 #include <array>
+#include <functional>
 
 #include "socket.h"
 
@@ -136,18 +137,13 @@ bool socket_t::connect(const sockaddr* addr, size_t len) const
 bool socket_t::connect(const std::string& host, uint16_t port) const
 {
     // getting ip-address from host name
-    hostent* he = gethostbyname(host);
-    if (nullptr == he)
+    addrinfo* ai = getaddrinfo(host, port);
+    // add to smart pointer
+    std::unique_ptr<addrinfo, std::function<void(addrinfo*)>> servinfo(ai, [](addrinfo* ai) { ::freeaddrinfo(ai); });
+    if (!servinfo)
         return false;
-    
-    //initiate an internet socket address
-    sockaddr_in sin;
-    std::copy(reinterpret_cast<char*>(he->h_addr), 
-        reinterpret_cast<char*>(he->h_addr) + he->h_length, reinterpret_cast<char*>(&sin.sin_addr.s_addr));
-    sin.sin_family = _family;
-    sin.sin_port = htons(port);
-    
-    return connect(reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+
+    return connect(servinfo->ai_addr, servinfo->ai_addrlen);
 }
 
 // accept a connection on a socket
@@ -328,38 +324,34 @@ size_t socket_t::send(const void* buf, size_t size, int flags, const sockaddr* a
     return num;
 }
 
-// cheack is socket ready
-hostent* socket_t::gethostbyname(const std::string& name) const
+// get address info by name
+addrinfo* socket_t::getaddrinfo(const std::string& node, const std::string& service) const
 {
-    hostent* he = ::gethostbyname(name.c_str());
-    if (he == nullptr)
+    int status;
+    addrinfo *servinfo;
+    addrinfo hints;
+
+    memset(&hints, 0, sizeof hints); // убедимся, что структура пуста
+    hints.ai_family = AF_UNSPEC;     // неважно, IPv4 или IPv6
+    hints.ai_socktype = SOCK_STREAM; // TCP stream-sockets
+    hints.ai_flags = AI_PASSIVE;     // заполните мой IP-адрес за меня
+
+    if ((status = ::getaddrinfo(node.c_str(), service.c_str(), &hints, &servinfo)) != 0)
     {
-        // build error string
-        std::stringstream buf;
-        switch (h_errno)
-        {
-            case HOST_NOT_FOUND:
-            buf << "The host \"" << name << "\" is unknown.";
-            break;
-            
-            case NO_ADDRESS:
-            //case NO_DATA:
-            buf << "The host \"" << name << "\" is valid but does not have an IP address.";
-            break;
-            
-            case NO_RECOVERY:
-            buf << "A nonrecoverable name server error occurred.";
-            break;
-            
-            //case TRY_AGAIN:
-            default:
-            buf << "A temporary error occurred on an authoritative name server. Try again later.";
-            break;
-        }
         _error = EADDRNOTAVAIL;
-        _error_msg = buf.str();
+        _error_msg = gai_strerror(status);
+        return nullptr;
     }
-    return he;
+
+    return servinfo;
+}
+
+// get address info by name
+addrinfo* socket_t::getaddrinfo(const std::string& node, int port) const
+{
+    std::stringstream buf;
+    buf << port;
+    return getaddrinfo(node, buf.str());
 }
 
 // set last error socket
