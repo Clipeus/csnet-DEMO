@@ -6,73 +6,73 @@
 namespace csnet
 {
 
-// provide application settings class
-class mysettings_t : public shared::settings_t, public shared::singleton<mysettings_t>
-{
+  // provide application settings class
+  class mysettings_t : public shared::settings_t, public shared::singleton<mysettings_t>
+  {
     friend struct deleter;
     template<class U> friend class shared::singleton;
 
     static constexpr int _CONNECT_ATTEMPT = 5; // what is count attempt to connect if server is busy?
     static constexpr int _WAIT_NEXT_CONNECT_ATTEMPT = 100; // time in ms to wait next attempt
 
-protected:
+  protected:
     mysettings_t(csnet::shared::settings_provider_t* provider);
     ~mysettings_t();
-   
+
     // create standalone object
     static mysettings_t* create();
-    
-public:
+
+  public:
     // load settings
     void load();
     // save settings
     void save();
     // set default values
     void reset();
-    
-public:
+
+  public:
     //get host name
     std::string host() const
     {
-        return _host;
+      return _host;
     }
     // get net port
     int port() const
     {
-        return _port;
+      return _port;
     }
     // get user login
     std::string login() const
     {
-        return _login;
+      return _login;
     }
     // get user password
     std::string password() const
     {
-        return _password;
+      return _password;
     }
     // get count attempt to connect if server is busy?
     int connect_attempts() const
     {
-        return _connect_attempts;
+      return _connect_attempts;
     }
     // get time in ms to wait next attempt
     int next_attempt() const
     {
-        return _next_attempt;
+      return _next_attempt;
     }
 
-protected:
+  protected:
     // check values and correct
     virtual void check_values();
 
-private:
+  private:
     int _port;
     std::string _host;
     std::string _login;
     std::string _password;
     int _connect_attempts;
     int _next_attempt;
-};
+  };
 
 }

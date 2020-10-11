@@ -7,16 +7,16 @@
 namespace csnet
 {
 
-// hi-level client api implementation
+  // hi-level client api implementation
 
-// client net api wrapper
-class clnapi_t : public shared::client_api_t
-{
-public:
+  // client net api wrapper
+  class clnapi_t : public shared::client_api_t
+  {
+  public:
     clnapi_t(shared::packet_kind kind = shared::packet_kind::P_BASE_KIND);
     virtual ~clnapi_t();
 
-public:
+  public:
     // send text to echo server and get echo from server
     std::string sendmsg(const std::string& msg) const;
     // send request to server and get current time from server
@@ -25,6 +25,8 @@ public:
     std::string execmd(const std::string& cmd) const;
     // send credentials to server to check them
     void check_credentials(const std::string& login, const std::string& password) const;
-};
+    // send expression to server and get expression result from server
+    std::string calculate(const std::string& input) const;
+  };
 
 }

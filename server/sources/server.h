@@ -6,14 +6,14 @@
 namespace csnet
 {
 
-// socket server class
-class myserver_t //: public shared::csnet_api_t
-{
-public:
+  // socket server class
+  class myserver_t //: public shared::csnet_api_t
+  {
+  public:
     myserver_t(std::unique_ptr<service_i> handler);
     virtual ~myserver_t();
 
-public:
+  public:
     // start server
     int start(int port, int pool_count, int queue_count);
     // stopt server
@@ -21,13 +21,13 @@ public:
     // signal handler
     void onsignal(const shared::signal_t<myserver_t>* sender, int signal);
 
-protected:
+  protected:
     void init_socket(int port, int queue_count);
     void init_signal();
     // true if need to exit
     bool is_finished();
 
-protected:
+  protected:
     shared::packet_socket_t _socket;
     std::unique_ptr<service_i> _handler;
     shared::signal_t<myserver_t> _signal;
@@ -35,6 +35,6 @@ protected:
 #ifdef _WIN32
     SOCKET _cancel = INVALID_SOCKET;
 #endif
-};
+  };
 
 }

@@ -3,22 +3,22 @@
 namespace csnet
 {
 
-class daemon_t
-{
-public:
+  class daemon_t
+  {
+  public:
     daemon_t(int argc = 0, char** args = nullptr);
     ~daemon_t();
-    
-public:
+
+  public:
     int run();
-    
-protected:
+
+  protected:
     virtual bool parse_cmd();
     virtual int process();
-    
-protected:
+
+  protected:
     int _argc;
     char** _args;
-};
+  };
 
 }
