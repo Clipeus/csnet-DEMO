@@ -11,6 +11,6 @@ Use build-all.sh to build all.
 Use build-client.sh build a client.
 Use build-server.sh build a server.
 
-Now the project can be built for Windows in Visual Studio 2015. Use csnet.sln to do it.
+Now the project can be built for Windows in Visual Studio 2019. Use csnet.sln to do it.
 
 The code can be compiled with Visual C++ 2019 or GCC version 4.9.2 and higher, supported 64 bits only.
