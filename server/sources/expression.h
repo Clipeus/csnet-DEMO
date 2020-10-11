@@ -8,7 +8,7 @@ namespace csnet
     expression_t(const std::string& token, expression_t a) : token(token), args{ a } {}
     expression_t(const std::string& token, expression_t a, expression_t b) : token(token), args{ a, b } {}
 
-    static 	double expression_t::eval(const expression_t& e);
+    static double eval(const expression_t& e);
 
     std::string token;
     std::vector<expression_t> args;
